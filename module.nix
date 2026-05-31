@@ -46,49 +46,38 @@ in
     my-hyprland.package =
       let
         baseDir = ./.;
-        # Script Lua che genera il file hyprland.conf finale
-        generatorLua = pkgs.writeText "hyprland-generator.lua" ''
-          package.path = "${baseDir}/?.lua;${luaConfigDir}/?.lua;" .. package.path
-
-          -- Iniezione Variabili Nix
-          _G.NIX = {
+        
+        # Generiamo una directory contenente nix-env.lua
+        nixEnvDir = pkgs.writeTextDir "nix-env.lua" ''
+          local NIX = {
             terminal = "${config.my-hyprland.terminal}",
             browser = "${config.my-hyprland.browser}",
-            -- Mappa dei pacchetti extra (nome -> path)
+            
             pkgs = {
               ${lib.concatMapStringsSep ",\n              " (
                 p: "${p.pname or "unknown"} = '${p}'"
               ) config.my-hyprland.extraPackages}
             },
-            -- Esempio di "funzione" iniettata da Nix
-            msg = function(text)
-              io.stderr:write("-- NIX MESSAGE: " .. text .. "\\n")
-            end
+            
+            plugins = {
+              ${lib.concatMapStringsSep ",\n              " (
+                p: "'${p}/lib/hyprland/lib${p.pname}.so'"
+              ) config.my-hyprland.plugins}
+            }
           }
-
-          -- Caricamento bridge e configurazione utente
-          local hl = require("hl")
-
-          -- Iniezione Plugin tramite Nix
-          ${lib.concatMapStringsSep "\n" (
-            p: "hl.plugin('${p}/lib/hyprland/lib${p.pname}.so')"
-          ) config.my-hyprland.plugins}
-
-          require("init")
-
-          -- Output della configurazione compilata
-          print(hl.compile())
+          return NIX
         '';
 
-        # Generiamo il file .conf effettivo usando Lua in fase di build
-        hyprlandConf =
-          pkgs.runCommand "hyprland.conf"
-            {
-              nativeBuildInputs = [ pkgs.lua ];
-            }
-            ''
-              lua ${generatorLua} > $out
-            '';
+        # Il motore interno Lua di Hyprland potrebbe ignorare la variabile d'ambiente LUA_PATH.
+        # Creiamo un file di entrypoint che configura i path manualmente e poi carica init.lua.
+        entrypointLua = pkgs.writeText "hyprland-entrypoint.lua" ''
+          -- Iniettiamo i path di Nix e del progetto nel motore Lua
+          package.path = "${nixEnvDir}/?.lua;${baseDir}/?.lua;${luaConfigDir}/?.lua;" .. package.path
+          
+          -- Passiamo il controllo al file di configurazione dell'utente
+          require("init")
+        '';
+
       in
       # Creiamo il wrapper finale
       (pkgs.symlinkJoin {
@@ -97,7 +86,7 @@ in
         buildInputs = [ pkgs.makeWrapper ];
         postBuild = ''
           wrapProgram $out/bin/Hyprland \
-            --add-flags "-c ${hyprlandConf}"
+            --add-flags "-c ${entrypointLua}"
         '';
       }).overrideAttrs
         (old: {

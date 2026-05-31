@@ -1,23 +1,23 @@
--- Usiamo ALT per evitare conflitti con il compositor ospite (che usa SUPER)
+local NIX = require("nix-env")
+
 local mod = "ALT"
 local term = NIX.terminal or "kitty"
 local browser = NIX.browser or "firefox"
 
 local launcher_pkg = NIX.pkgs.wofi or NIX.pkgs.rofi
-local launcher = "wofi --show drun" -- fallback se non troviamo il path
+local launcher = "wofi --show drun" -- fallback
 if launcher_pkg then
     launcher = launcher_pkg .. "/bin/" .. (NIX.pkgs.wofi and "wofi" or "rofi") .. " --show drun"
 end
 
--- Apertura Terminale
-hl.bind({ mod = mod, key = "RETURN", dispatcher = "exec", arg = term })
--- Chiusura Finestra
-hl.bind({ mod = mod .. " SHIFT", key = "Q", dispatcher = "killactive", arg = "" })
+-- Nuova sintassi nativa hl.bind
+hl.bind(mod, "RETURN", "exec", term)
+hl.bind(mod .. " SHIFT", "Q", "killactive")
 
-hl.bind({ mod = mod, key = "Q", dispatcher = "exec", arg = term })
-hl.bind({ mod = mod, key = "B", dispatcher = "exec", arg = browser })
-hl.bind({ mod = mod, key = "R", dispatcher = "exec", arg = launcher })
-hl.bind({ mod = mod, key = "M", dispatcher = "exit", arg = "" })
+hl.bind(mod, "Q", "exec", term)
+hl.bind(mod, "B", "exec", browser)
+hl.bind(mod, "R", "exec", launcher)
+hl.bind(mod, "M", "exit")
 
--- Chiamata alla funzione iniettata da Nix
-NIX.msg("Configurazione tasti caricata correttamente!")
+-- Al posto di print, possiamo usare os.execute per loggare o testare
+os.execute("echo 'Configurazione tasti caricata nativamente' >&2")

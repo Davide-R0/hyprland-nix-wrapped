@@ -1,3 +1,7 @@
-hl.monitor({ output = "WL-1", mode = "1920x1080@60" })
--- Configurazione di fallback (output vuoto significa tutti i monitor non configurati)
-hl.monitor({ output = "" })
+-- Usiamo l'API hl nativa di Hyprland 0.55+
+hl.config({
+    monitor = {
+        "WL-1, 1920x1080@60, auto, 1",
+        ", preferred, auto, 1" -- Fallback
+    }
+})
