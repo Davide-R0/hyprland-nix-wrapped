@@ -1,5 +1,5 @@
-inputs:
 {
+  inputs,
   config,
   lib,
   pkgs,
@@ -7,36 +7,10 @@ inputs:
   ...
 }:
 let
-  # 1. Copiamo la nostra cartella lua locale nel Nix Store in modo che sia immutabile
   luaConfigDir = ./lua;
-
-  # 2. Generiamo l'entrypoint che Hyprland andrà a leggere
-  bootstrapLua = pkgs.writeText "hyprland-bootstrap.lua" ''
-    -- ==== NIX BOOTSTRAP ==== --
-
-    -- Diciamo al motore Lua di Hyprland dove trovare i nostri file
-    -- Aggiungiamo la cartella importata nel Nix Store al package.path
-    package.path = package.path .. ";${luaConfigDir}/?.lua;./init.lua"
-
-    -- Creiamo una tabella globale per passare i pacchetti Nix ai nostri script Lua
-    _G.NIX = {
-      terminal = "${config.my-hyprland.terminal}",
-      browser = "${config.my-hyprland.browser}",
-    }
-
-    -- Carichiamo i plugin compilati da Nix
-    ${lib.concatMapStringsSep "\n" (
-      p: "hl.plugin('${p}/lib/lib${p.pname}.so')"
-    ) config.my-hyprland.plugins}
-
-    -- ==== AVVIO CONFIGURAZIONE REALE ==== --
-    -- Ora che l'ambiente è pronto, carichiamo il nostro lua/init.lua
-    require("init")
-  '';
-
 in
 {
-  # Definiamo le nostre opzioni
+  # 1. Definiamo le opzioni per il nostro modulo
   options.my-hyprland = {
     terminal = lib.mkOption {
       type = lib.types.str;
@@ -48,18 +22,82 @@ in
     };
     plugins = lib.mkOption {
       type = lib.types.listOf lib.types.package;
-      default = [ ]; # Aggiungi qui pkgs.hyprlandPlugins.* se necessario
+      default = [ ];
+    };
+    extraPackages = lib.mkOption {
+      type = lib.types.listOf lib.types.package;
+      default = [ ];
+    };
+    # Aggiungiamo un'opzione di sola lettura per esporre il pacchetto finale
+    package = lib.mkOption {
+      type = lib.types.package;
+      readOnly = true;
     };
   };
 
-  # Configuriamo il wrapper
+  # 2. Assegniamo i valori.
   config = {
-    package = pkgs.hyprland;
+    my-hyprland.package =
+      let
+        baseDir = ./.;
+        # Script Lua che genera il file hyprland.conf finale
+        generatorLua = pkgs.writeText "hyprland-generator.lua" ''
+          package.path = "${baseDir}/?.lua;${luaConfigDir}/?.lua;" .. package.path
 
-    # Diciamo ad Hyprland di usare il nostro file generato
-    addFlags = [
-      "-c"
-      "${bootstrapLua}"
-    ];
+          -- Iniezione Variabili Nix
+          _G.NIX = {
+            terminal = "${config.my-hyprland.terminal}",
+            browser = "${config.my-hyprland.browser}",
+            -- Mappa dei pacchetti extra (nome -> path)
+            pkgs = {
+              ${lib.concatMapStringsSep ",\n              " (
+                p: "${p.pname or "unknown"} = '${p}'"
+              ) config.my-hyprland.extraPackages}
+            },
+            -- Esempio di "funzione" iniettata da Nix
+            msg = function(text)
+              print("-- NIX MESSAGE: " .. text)
+            end
+          }
+
+          -- Caricamento bridge e configurazione utente
+          local hl = require("hl")
+
+          -- Iniezione Plugin tramite Nix
+          ${lib.concatMapStringsSep "\n" (
+            p: "hl.plugin('${p}/lib/hyprland/lib${p.pname}.so')"
+          ) config.my-hyprland.plugins}
+
+          require("init")
+
+          -- Output della configurazione compilata
+          print(hl.compile())
+        '';
+
+        # Generiamo il file .conf effettivo usando Lua in fase di build
+        hyprlandConf =
+          pkgs.runCommand "hyprland.conf"
+            {
+              nativeBuildInputs = [ pkgs.lua ];
+            }
+            ''
+              lua ${generatorLua} > $out
+            '';
+      in
+      # Creiamo il wrapper finale
+      (pkgs.symlinkJoin {
+        name = "hyprland-nix-wrapped";
+        paths = [ pkgs.hyprland ] ++ config.my-hyprland.extraPackages;
+        buildInputs = [ pkgs.makeWrapper ];
+        postBuild = ''
+          wrapProgram $out/bin/Hyprland \
+            --add-flags "-c ${hyprlandConf}"
+        '';
+      }).overrideAttrs
+        (old: {
+          meta = (old.meta or { }) // {
+            mainProgram = "Hyprland";
+          };
+        });
   };
 }
