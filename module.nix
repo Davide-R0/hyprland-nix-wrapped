@@ -14,7 +14,7 @@ in
   options.my-hyprland = {
     terminal = lib.mkOption {
       type = lib.types.str;
-      default = "${pkgs.kitty}/bin/kitty";
+      default = "${pkgs.alacritty}/bin/alacritty";
     };
     browser = lib.mkOption {
       type = lib.types.str;
@@ -26,7 +26,7 @@ in
     };
     extraPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
-      default = [ ];
+      default = [ pkgs.alacritty ];
     };
     # Aggiungiamo un'opzione di sola lettura per esporre il pacchetto finale
     package = lib.mkOption {
@@ -34,6 +34,12 @@ in
       readOnly = true;
     };
   };
+
+  # per agigungere poi i plugins dall'esterno:
+  #my-hyprland.plugins = [
+  #  pkgs.hyprlandPlugins.hyprbars
+  #  # altri plugin...
+  #];
 
   # 2. Assegniamo i valori.
   config = {
@@ -56,7 +62,7 @@ in
             },
             -- Esempio di "funzione" iniettata da Nix
             msg = function(text)
-              print("-- NIX MESSAGE: " .. text)
+              io.stderr:write("-- NIX MESSAGE: " .. text .. "\\n")
             end
           }
 
