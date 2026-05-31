@@ -12,10 +12,6 @@ hl.config({
             bar_button_padding = 10,
             bar_padding = 10,
             bar_precedence_over_border = true,
-            
-            -- In lua gli elementi ripetuti multipli come hyprbars-button
-            -- non possono usare la sintassi dict base. L'API di Hyprland li gestisce così:
-            -- (Nota: la sintassi esatta dipenderà dai type hints del plugin esposti a Lua)
         }
     }
 })

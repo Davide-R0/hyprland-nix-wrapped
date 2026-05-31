@@ -67,6 +67,9 @@ in
           local NIX = {
             terminal = "${config.hyprland-nix-wrapped.terminal}",
             browser = "${config.hyprland-nix-wrapped.browser}",
+            dmsPath = "${config.hyprland-nix-wrapped.dmsPath}",
+            enableHyprbars = ${if config.hyprland-nix-wrapped.enableHyprbars then "true" else "false"},
+            extraWindowRule = ${if config.hyprland-nix-wrapped.extraWindowRule then "true" else "false"},
             displayScale = "${config.hyprland-nix-wrapped.displayScale}",
             
             pkgs = {
