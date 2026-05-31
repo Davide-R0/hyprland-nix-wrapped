@@ -62,3 +62,55 @@ nix run .#nixosConfigurations.test-vm.config.system.build.vm
 
 poi quando si è dentro si puù usare `Ctrl + Alt + G` per catturare e decatturare
 i tasti dall'interno (senza questo non funziona aprire le finestre all'interno)
+
+## Come usarlo nella config os
+
+nel falke principale
+
+```nix
+inputs.hyprland-nix-wrapped = {
+  url = "github:TuoNome/hyprland-nix-wrapped";
+  inputs.nixpkgs.follows = "nixpkgs";
+};
+```
+
+Nel home manager:
+
+```nix
+{ config, pkgs, inputs, ... }: {
+
+  # Importare il modulo creato
+  imports = [
+    inputs.hyprland-nix-wrapped.nixosModules.default
+  ];
+
+  # Per sicurezza si puù disattivare il modulo standard di hyprland
+  wayland.windowManager.hyprland.enable = false;
+
+  # Configurazione hyprland personalizzato
+  hyprland-nix-wrapped = {
+    terminal = "${pkgs.alacritty}/bin/alacritty";
+    browser = "${pkgs.brave}/bin/brave";
+
+    # Opzione custom creata
+    displayScale = "1.2";
+
+    plugins = with pkgs; [
+      hyprlandPlugins.hyprbars
+    ];
+    # Qui vanno pachcetit extra come wofi o waybar, ecc...
+    extraPackages = with pkgs; [
+      #wofi
+      #grim
+    ];
+  };
+
+  # Mettere il pacchetto risultante nei pacchetti di sistema
+  # così si può avviare dal login manager (SDDM/Tuigreet/ecc)
+  home.packages = [
+    config.my-hyprland.package
+  ];
+}
+```
+
+questo si puo mettere dentro ad un modulo di flake-parts se si vuole.

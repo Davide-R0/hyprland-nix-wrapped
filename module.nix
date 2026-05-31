@@ -1,17 +1,14 @@
 {
-  inputs,
   config,
   lib,
   pkgs,
-  options,
   ...
 }:
 let
   luaConfigDir = ./lua;
 in
 {
-  # 1. Definiamo le opzioni per il nostro modulo
-  options.my-hyprland = {
+  options.hyprland-nix-wrapped = {
     terminal = lib.mkOption {
       type = lib.types.str;
       default = "${pkgs.alacritty}/bin/alacritty";
@@ -20,13 +17,33 @@ in
       type = lib.types.str;
       default = "${pkgs.firefox}/bin/firefox";
     };
+    dmsPath = lib.mkOption {
+      type = lib.types.str;
+      default = "dms";
+      description = "Path per l'eseguibile dms";
+    };
+    enableHyprbars = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Abilita il plugin hyprbars";
+    };
+    extraWindowRule = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Abilita le regole extra delle finestre";
+    };
     plugins = lib.mkOption {
       type = lib.types.listOf lib.types.package;
-      default = [ ];
+      default = [ pkgs.hyprlandPlugins.hyprbars ];
     };
     extraPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
       default = [ pkgs.alacritty ];
+    };
+    displayScale = lib.mkOption {
+      type = lib.types.str;
+      default = "1";
+      description = "Fattore di scaling globale del monitor (es. 1, 1.5, 2)";
     };
     # Aggiungiamo un'opzione di sola lettura per esporre il pacchetto finale
     package = lib.mkOption {
@@ -35,34 +52,37 @@ in
     };
   };
 
-  # per agigungere poi i plugins dall'esterno:
-  #my-hyprland.plugins = [
-  #  pkgs.hyprlandPlugins.hyprbars
-  #  # altri plugin...
-  #];
-
-  # 2. Assegniamo i valori.
   config = {
-    my-hyprland.package =
+    hyprland-nix-wrapped.package =
       let
         baseDir = ./.;
-        
+
+        # Troviamo tutti i file .lua in lua/config
+        configFiles = builtins.attrNames (builtins.readDir ./lua/config);
+        luaModules = builtins.filter (lib.hasSuffix ".lua") configFiles;
+        moduleNames = map (lib.removeSuffix ".lua") luaModules;
+
         # Generiamo una directory contenente nix-env.lua
         nixEnvDir = pkgs.writeTextDir "nix-env.lua" ''
           local NIX = {
-            terminal = "${config.my-hyprland.terminal}",
-            browser = "${config.my-hyprland.browser}",
+            terminal = "${config.hyprland-nix-wrapped.terminal}",
+            browser = "${config.hyprland-nix-wrapped.browser}",
+            displayScale = "${config.hyprland-nix-wrapped.displayScale}",
             
             pkgs = {
               ${lib.concatMapStringsSep ",\n              " (
                 p: "${p.pname or "unknown"} = '${p}'"
-              ) config.my-hyprland.extraPackages}
+              ) config.hyprland-nix-wrapped.extraPackages}
             },
             
             plugins = {
               ${lib.concatMapStringsSep ",\n              " (
                 p: "'${p}/lib/hyprland/lib${p.pname}.so'"
-              ) config.my-hyprland.plugins}
+              ) config.hyprland-nix-wrapped.plugins}
+            },
+            
+            configModules = {
+              ${lib.concatMapStringsSep ",\n              " (m: "'${m}'") moduleNames}
             }
           }
           return NIX
@@ -73,7 +93,7 @@ in
         entrypointLua = pkgs.writeText "hyprland-entrypoint.lua" ''
           -- Iniettiamo i path di Nix e del progetto nel motore Lua
           package.path = "${nixEnvDir}/?.lua;${baseDir}/?.lua;${luaConfigDir}/?.lua;" .. package.path
-          
+
           -- Passiamo il controllo al file di configurazione dell'utente
           require("init")
         '';
@@ -82,7 +102,7 @@ in
       # Creiamo il wrapper finale
       (pkgs.symlinkJoin {
         name = "hyprland-nix-wrapped";
-        paths = [ pkgs.hyprland ] ++ config.my-hyprland.extraPackages;
+        paths = [ pkgs.hyprland ] ++ config.hyprland-nix-wrapped.extraPackages;
         buildInputs = [ pkgs.makeWrapper ];
         postBuild = ''
           wrapProgram $out/bin/Hyprland \

@@ -1,13 +1,14 @@
 local NIX = require("nix-env")
 
--- Carichiamo i plugin tramite le API native di Hyprland bypassando hyprpm
+-- Carichiamo i plugin tramite le API native
 for _, plugin in ipairs(NIX.plugins) do
-    hl.exec("hyprctl plugin load " .. plugin)
+    hl.dispatch(hl.dsp.exec_cmd("hyprctl plugin load " .. plugin))
 end
 
--- Require moduli secondari
-require("config.monitors")
-require("config.keybinds")
+-- Caricamento automatico di tutti i file in lua/config/ a cascata
+for _, mod in ipairs(NIX.configModules) do
+    require("config." .. mod)
+end
 
 -- Configurazione globale
 hl.config({
