@@ -1,0 +1,4 @@
+# Lua LSP configuraiton file
+std = "vim"
+[config]
+globals = ["vim", "require", "hl"]
