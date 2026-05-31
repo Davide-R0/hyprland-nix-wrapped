@@ -3,11 +3,13 @@ local NIX = require("nix-env")
 hl.config({
     exec_once = {
         NIX.dmsPath .. " run",
-        "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
-        "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
-        "systemctl --user start hyprland-session.target",
-        -- Assumendo che pkgs.polkit_gnome sia nei system packages, altrimenti andrebbe passato tramite Nix
-        "/usr/libexec/polkit-gnome-authentication-agent-1" 
+        -- ATTENZIONE: Questi comandi sono stati disabilitati per il testing nested.
+        -- Se eseguiti in una finestra, sovrascrivono il WAYLAND_DISPLAY del tuo sistema host
+        -- e rompono la sessione principale (causando i blocchi IPC).
+        -- "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
+        -- "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
+        -- "systemctl --user start hyprland-session.target",
+        -- "/usr/libexec/polkit-gnome-authentication-agent-1" 
     },
     
     env = {
@@ -28,12 +30,10 @@ hl.config({
         }
     },
 
-    gestures = {
-        workspace_swipe = true,
-        -- Hyprland gestures array tradotto
-        -- Note: L'array di gestures personalizzate "3, horizontal, workspace"
-        -- potrebbe richiedere un plugin o una direttiva raw a seconda del supporto 0.55
-    },
+    -- Bloccato temporaneamente per testare il bug "unknown config key"
+    -- gestures = {
+    --     workspace_swipe = true,
+    -- },
 
     general = {
         gaps_in = 4,

@@ -1,6 +1,7 @@
 -- Configurazioni per i plugin caricati
--- Questo file è un esempio per il plugin hyprbars
+-- Bloccato temporaneamente per testare il bug "unknown config key"
 
+--[[ 
 hl.config({
     plugin = {
         hyprbars = {
@@ -15,6 +16,7 @@ hl.config({
         }
     }
 })
+]]--
 
 -- Le animazioni o i bottoni custom si possono aggiungere con comandi grezzi se il plugin 
 -- non ha ancora pieno supporto dict Lua:

@@ -1,0 +1,74 @@
+/*
+ * Supporta tutte le classiche proprietà CSS3, oltre ad alcune 
+ * estensioni specifiche di GTK4 per gradienti, ombre, ecc.
+ */
+
+/* 1. Variabili globali per cambiare tema istantaneamente */
+@define-color bg_color rgba(30, 30, 46, 0.9);   /* Sfondo scuro semi-trasparente */
+@define-color fg_color #cdd6f4;                 /* Testo chiaro */
+@define-color accent_color #89b4fa;             /* Azzurro Catppuccin */
+@define-color urgent_color #f38ba8;             /* Rosso per errori/batteria scarica */
+
+/* 2. Stile generale della finestra */
+window {
+    font-family: "JetBrainsMono Nerd Font", "Fira Code", sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    color: @fg_color;
+}
+
+/* 3. Il contenitore principale della barra */
+.bar-container {
+    background-color: @bg_color;
+    border-radius: 12px;
+    margin: 8px 15px; /* Crea una "floating bar" staccata dai bordi */
+    padding: 5px 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5); /* Ombreggiatura GTK nativa */
+}
+
+/* 4. I widget interni (Batteria, CPU, ecc.) */
+.cpu-widget,
+.bat-widget {
+    background-color: rgba(255, 255, 255, 0.05); /* Leggero sfondo per separarli */
+    padding: 4px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 5. Effetti al passaggio del mouse (Hover) sui bottoni dei Workspace */
+.workspace-btn {
+    color: @fg_color;
+    background: transparent;
+    border-radius: 6px;
+    padding: 0 10px;
+    transition: all 0.2s ease-in-out; /* Animazioni fluide! */
+}
+
+.workspace-btn:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: @accent_color;
+}
+
+/* Esempio di stato attivo */
+.workspace-btn.active {
+    background-color: @accent_color;
+    color: #11111b;
+}
+
+/* 6. Il D-Menu (Il lanciatore applicazioni) */
+.menu-wrapper {
+    background-color: @bg_color;
+    border: 2px solid @accent_color;
+    border-radius: 16px;
+    padding: 20px;
+    min-width: 500px; /* Larghezza fissa per il menu centrale */
+}
+
+.search-box {
+    font-size: 18px;
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: none;
+    border-bottom: 2px solid @accent_color;
+    color: @fg_color;
+}
