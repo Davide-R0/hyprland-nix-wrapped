@@ -2,8 +2,8 @@ local NIX = require("nix-env")
 
 -- Window Rules
 hl.window_rule({
-    name  = "no_anim_quickshell",
-    match = { class = ".*org.quickshell.*" },
+    name    = "no_anim_quickshell",
+    match   = { class = ".*org.quickshell.*" },
     no_anim = true
 })
 

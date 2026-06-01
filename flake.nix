@@ -53,10 +53,28 @@
               echo "Use 'hypr-watch' to start Hyprland with live-reload on Lua changes."
               echo ""
               hypr-watch() {
-                # Trova tutti i file lua e usa entr per riavviare hyprland
-                # Nota: In un ambiente reale, potresti voler usare 'hyprctl reload' 
-                # ma se la config è passata via flag -c, il riavvio è più sicuro per i test.
-                find . -name "*.lua" | entr -r ${hyprland-wrapped}/bin/Hyprland
+                # 1. Creiamo un entrypoint locale temporaneo per evitare di puntare al Nix Store
+                # Questo permette di modificare i file .lua e vedere i cambiamenti al volo.
+                cat <<EOF > .dev-entrypoint.lua
+                  package.path = "./?.lua;./lua/config/?.lua;" .. package.path
+                  -- Mock nix-env per il development locale se necessario, 
+                  -- o usa quello generato dal wrapper (ma qui è più semplice puntare al locale)
+                  require("init")
+EOF
+
+                echo "Avvio Hyprland in modalità dev..."
+                ${hyprland-wrapped}/bin/Hyprland -c ./.dev-entrypoint.lua &
+                HYPR_PID=\$!
+                
+                # 2. Aspettiamo che si avvii e poi usiamo entr per mandare il reload
+                # Senza '-r', entr non uccide il processo ma esegue solo il comando.
+                # Usiamo 'hyprctl reload' per il hot-reload senza chiudere la finestra.
+                sleep 2
+                find . -name "*.lua" | entr hyprctl reload
+                
+                # Cleanup al termine
+                kill \$HYPR_PID
+                rm .dev-entrypoint.lua
               }
             '';
           };

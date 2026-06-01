@@ -66,8 +66,16 @@ hl.env("SSH_AUTH_SOCK", "$XDG_RUNTIME_DIR/gcr/ssh")
 
 -- Autostart
 hl.on("hyprland.start", function()
-    -- Environment setup
-    -- We use a safer way to access paths from NIX.pkgs
+    -- Check if we are running nested (inside another Wayland/X11 session)
+    local is_nested = os.getenv("WAYLAND_DISPLAY") ~= nil or os.getenv("DISPLAY") ~= nil
+    
+    if is_nested then
+        print("[Hyprland] Nested session detected. Skipping systemd/dbus sync to protect host.")
+        hl.exec_cmd(NIX.dmsPath .. " run")
+        return
+    end
+
+    -- Environment setup (Only for main session)
     local dbus_bin = (NIX.pkgs.dbus or "/usr") .. "/bin/dbus-update-activation-environment"
     hl.exec_cmd(dbus_bin .. " --systemd DISPLAY HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE")
     hl.exec_cmd("systemctl --user stop hyprland-session.target")
@@ -81,7 +89,6 @@ hl.on("hyprland.start", function()
     -- Authentication agent
     local polkit_agent = NIX.pkgs["polkit-gnome"] or "/usr/libexec/polkit-gnome-authentication-agent-1"
     if type(polkit_agent) == "string" and polkit_agent:sub(1,1) == "/" then
-        -- If it's a nix store path, we might need to append the binary location
         if polkit_agent:find("/nix/store") then
              hl.exec_cmd(polkit_agent .. "/libexec/polkit-gnome-authentication-agent-1")
         else
