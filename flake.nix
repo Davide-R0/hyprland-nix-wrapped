@@ -53,28 +53,46 @@
               echo "Use 'hypr-watch' to start Hyprland with live-reload on Lua changes."
               echo ""
               hypr-watch() {
-                # 1. Creiamo un entrypoint locale temporaneo per evitare di puntare al Nix Store
-                # Questo permette di modificare i file .lua e vedere i cambiamenti al volo.
+                local PROJECT_ROOT=$(pwd)
+                
+                # 1. Generiamo un nix-env.lua locale per il dev
+                cat <<EOF > nix-env.lua
+                  local NIX = {
+                    terminal = "alacritty",
+                    browser = "firefox",
+                    dmsPath = "dms",
+                    enableHyprbars = true,
+                    extraWindowRule = true,
+                    displayScale = "1",
+                    extraInit = "",
+                    pkgs = {},
+                    plugins = {},
+                    configModules = { "general", "keybinds", "monitors", "plugins", "rules" }
+                  }
+                  return NIX
+EOF
+
+                # 2. Entrypoint locale con path ASSOLUTI
                 cat <<EOF > .dev-entrypoint.lua
-                  package.path = "./?.lua;./lua/config/?.lua;" .. package.path
-                  -- Mock nix-env per il development locale se necessario, 
-                  -- o usa quello generato dal wrapper (ma qui è più semplice puntare al locale)
+                  -- Aggiungiamo la root e la cartella lua/ per i moduli
+                  package.path = "$PROJECT_ROOT/?.lua;$PROJECT_ROOT/lua/?.lua;" .. package.path
                   require("init")
 EOF
 
-                echo "Avvio Hyprland in modalità dev..."
-                ${hyprland-wrapped}/bin/Hyprland -c ./.dev-entrypoint.lua &
-                HYPR_PID=\$!
+                echo "Avvio Hyprland (Nestato)..."
                 
-                # 2. Aspettiamo che si avvii e poi usiamo entr per mandare il reload
-                # Senza '-r', entr non uccide il processo ma esegue solo il comando.
-                # Usiamo 'hyprctl reload' per il hot-reload senza chiudere la finestra.
+                # Usiamo variabili d'ambiente per forzare un'istanza separata
+                # Nota: Rimosse le backslash da $PROJECT_ROOT per permettere l'espansione corretta
+                HYPRLAND_INSTANCE_SIGNATURE="nested-$RANDOM" \
+                ${hyprland-wrapped}/bin/Hyprland -c "$PROJECT_ROOT/.dev-entrypoint.lua" &
+                HYPR_PID=$!
+                
                 sleep 2
+                echo "Watching for changes in $PROJECT_ROOT..."
                 find . -name "*.lua" | entr hyprctl reload
                 
-                # Cleanup al termine
-                kill \$HYPR_PID
-                rm .dev-entrypoint.lua
+                kill $HYPR_PID
+                rm .dev-entrypoint.lua nix-env.lua
               }
             '';
           };

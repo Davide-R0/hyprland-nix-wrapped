@@ -70,8 +70,7 @@ hl.on("hyprland.start", function()
     local is_nested = os.getenv("WAYLAND_DISPLAY") ~= nil or os.getenv("DISPLAY") ~= nil
     
     if is_nested then
-        print("[Hyprland] Nested session detected. Skipping systemd/dbus sync to protect host.")
-        hl.exec_cmd(NIX.dmsPath .. " run")
+        print("[Hyprland] Nested session detected. Skipping autostart to protect host.")
         return
     end
 
@@ -81,10 +80,15 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("systemctl --user stop hyprland-session.target")
     hl.exec_cmd("systemctl --user start hyprland-session.target")
     
-    -- DMS and other services
-    hl.exec_cmd(NIX.dmsPath .. " run")
-    hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
-    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+    -- Execute commands from Nix extraInit option
+    if NIX.extraInit and NIX.extraInit ~= "" then
+        -- We might need to split by lines if exec_cmd only takes one command
+        for line in NIX.extraInit:gmatch("[^\r\n]+") do
+            if line:match("%S") then
+                hl.exec_cmd(line)
+            end
+        end
+    end
     
     -- Authentication agent
     local polkit_agent = NIX.pkgs["polkit-gnome"] or "/usr/libexec/polkit-gnome-authentication-agent-1"
@@ -95,6 +99,4 @@ hl.on("hyprland.start", function()
              hl.exec_cmd(polkit_agent)
         end
     end
-    
-    hl.exec_cmd("sleep 5 && " .. NIX.dmsPath .. " ipc call plugins disable compactNetSpeedV8")
 end)

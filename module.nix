@@ -45,6 +45,11 @@ in
       default = "1";
       description = "Fattore di scaling globale del monitor (es. 1, 1.5, 2)";
     };
+    extraInit = lib.mkOption {
+      type = lib.types.lines;
+      default = "";
+      description = "Comandi extra da eseguire all'avvio (es. dms run)";
+    };
     # Aggiungiamo un'opzione di sola lettura per esporre il pacchetto finale
     package = lib.mkOption {
       type = lib.types.package;
@@ -71,6 +76,9 @@ in
             enableHyprbars = ${if config.hyprland-nix-wrapped.enableHyprbars then "true" else "false"},
             extraWindowRule = ${if config.hyprland-nix-wrapped.extraWindowRule then "true" else "false"},
             displayScale = "${config.hyprland-nix-wrapped.displayScale}",
+            extraInit = [[
+${config.hyprland-nix-wrapped.extraInit}
+            ]],
             
             pkgs = {
               ${lib.concatMapStringsSep ",\n              " (

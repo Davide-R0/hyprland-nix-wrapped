@@ -1,4 +1,3 @@
-                  package.path = "./?.lua;./lua/config/?.lua;" .. package.path
-                  -- Mock nix-env per il development locale se necessario, 
-                  -- o usa quello generato dal wrapper (ma qui è più semplice puntare al locale)
+                  -- Aggiungiamo la root e la cartella lua/ per i moduli
+                  package.path = "/home/davide/04_Projects/hyprland-nix-wrapped/?.lua;/home/davide/04_Projects/hyprland-nix-wrapped/lua/?.lua;" .. package.path
                   require("init")
