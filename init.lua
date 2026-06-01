@@ -14,24 +14,11 @@ for _, mod in ipairs(NIX.configModules) do
     require("config." .. mod)
 end
 
--- 3. Configurazione globale
+-- 3. Configurazione globale / Overrides
 hl.config({
-    general = {
-
-        border_size = 2,
-        gaps_in = 5,
-        gaps_out = 10,
-    },
-    
-    decoration = {
-        rounding = 8,
-    },
-    
     cursor = {
         no_hardware_cursors = true,
     },
-    
-    env = {
-        "WLR_NO_HARDWARE_CURSORS,1",
-    }
 })
+
+hl.env("WLR_NO_HARDWARE_CURSORS", "1")

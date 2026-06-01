@@ -38,5 +38,29 @@
 
       # Esportiamo il modulo per poterlo importare in altri file di configurazione NixOS / Home Manager
       nixosModules.default = ./module.nix;
-      };
-      }
+
+      devShells = forAllSystems (
+        system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          hyprland-wrapped = self.packages.${system}.hyprland;
+        in
+        {
+          default = pkgs.mkShell {
+            buildInputs = with pkgs; [ entr ];
+            shellHook = ''
+              echo "--- Hyprland Lua DevShell ---"
+              echo "Use 'hypr-watch' to start Hyprland with live-reload on Lua changes."
+              echo ""
+              hypr-watch() {
+                # Trova tutti i file lua e usa entr per riavviare hyprland
+                # Nota: In un ambiente reale, potresti voler usare 'hyprctl reload' 
+                # ma se la config è passata via flag -c, il riavvio è più sicuro per i test.
+                find . -name "*.lua" | entr -r ${hyprland-wrapped}/bin/Hyprland
+              }
+            '';
+          };
+        }
+      );
+    };
+}
