@@ -34,7 +34,7 @@ in
     };
     plugins = lib.mkOption {
       type = lib.types.listOf lib.types.package;
-      default = [ pkgs.hyprlandPlugins.hyprbars ];
+      default = [ ];
     };
     extraPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
