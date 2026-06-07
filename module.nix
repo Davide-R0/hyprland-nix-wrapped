@@ -2,6 +2,7 @@
   config,
   lib,
   pkgs,
+  options,
   ...
 }:
 let
@@ -9,6 +10,9 @@ let
 in
 {
   options.hyprland-nix-wrapped = {
+    enable = lib.mkEnableOption "Hyprland Nix Wrapped";
+    # ... rest of options ...
+
     terminal = lib.mkOption {
       type = lib.types.str;
       default = "${pkgs.alacritty}/bin/alacritty";
@@ -56,68 +60,79 @@ in
     };
   };
 
-  config = {
-    hyprland-nix-wrapped.package =
-      let
-        baseDir = ./.;
+  config =
+    let
+      cfg = config.hyprland-nix-wrapped;
+      baseDir = ./.;
 
-        configFiles = builtins.attrNames (builtins.readDir ./lua/);
-        luaModules = builtins.filter (lib.hasSuffix ".lua") configFiles;
-        moduleNames = map (lib.removeSuffix ".lua") luaModules;
+      configFiles = builtins.attrNames (builtins.readDir ./lua);
+      luaModules = builtins.filter (lib.hasSuffix ".lua") configFiles;
+      moduleNames = map (lib.removeSuffix ".lua") luaModules;
 
-        nixEnvDir = pkgs.writeTextDir "nix-env.lua" ''
-          local NIX = {
-            terminal = "${config.hyprland-nix-wrapped.terminal}",
-            browser = "${config.hyprland-nix-wrapped.browser}",
-            dmsPath = "${config.hyprland-nix-wrapped.dmsPath}",
-            enableHyprbars = ${if config.hyprland-nix-wrapped.enableHyprbars then "true" else "false"},
-            extraWindowRule = ${if config.hyprland-nix-wrapped.extraWindowRule then "true" else "false"},
-            displayScale = "${config.hyprland-nix-wrapped.displayScale}",
-            extraInit = [[
-${config.hyprland-nix-wrapped.extraInit}
-            ]],
-            
-            pkgs = {
-              ${lib.concatMapStringsSep ",\n              " (
-                p: "${p.pname or "unknown"} = '${p}'"
-              ) config.hyprland-nix-wrapped.extraPackages}
-            },
-            
-            plugins = {
-              ${lib.concatMapStringsSep ",\n              " (
-                p: "'${p}/lib/hyprland/lib${p.pname}.so'"
-              ) config.hyprland-nix-wrapped.plugins}
-            },
-            
-            configModules = {
-              ${lib.concatMapStringsSep ",\n              " (m: "'${m}'") moduleNames}
-            }
+      nixEnvDir = pkgs.writeTextDir "nix-env.lua" ''
+        local NIX = {
+          terminal = "${cfg.terminal}",
+          browser = "${cfg.browser}",
+          dmsPath = "${cfg.dmsPath}",
+          enableHyprbars = ${if cfg.enableHyprbars then "true" else "false"},
+          extraWindowRule = ${if cfg.extraWindowRule then "true" else "false"},
+          displayScale = "${cfg.displayScale}",
+          extraInit = [[
+            ${cfg.extraInit}
+          ]],
+          
+          pkgs = {
+            ${lib.concatMapStringsSep ",\n            " (
+              p: "${p.pname or "unknown"} = '${p}'"
+            ) cfg.extraPackages}
+          },
+          
+          plugins = {
+            ${lib.concatMapStringsSep ",\n            " (
+              p: "'${p}/lib/hyprland/lib${p.pname}.so'"
+            ) cfg.plugins}
+          },
+          
+          configModules = {
+            ${lib.concatMapStringsSep ",\n            " (m: "'${m}'") moduleNames}
           }
-          return NIX
-        '';
+        }
+        return NIX
+      '';
 
-        entrypointLua = pkgs.writeText "hyprland-entrypoint.lua" ''
-          -- Iniettiamo i path di Nix e del progetto nel motore Lua
-          package.path = "${nixEnvDir}/?.lua;${baseDir}/?.lua;${luaConfigDir}/?.lua;" .. package.path
+      entrypointLua = pkgs.writeText "hyprland-entrypoint.lua" ''
+        -- Iniettiamo i path di Nix e del progetto nel motore Lua
+        package.path = "${nixEnvDir}/?.lua;${baseDir}/?.lua;${luaConfigDir}/?.lua;" .. package.path
 
-          -- Passiamo il controllo al file di configurazione dell'utente
-          require("init")
-        '';
+        -- Passiamo il controllo al file di configurazione dell'utente
+        require("init")
+      '';
 
-      in
-      (pkgs.symlinkJoin {
-        name = "hyprland-nix-wrapped";
-        paths = [ pkgs.hyprland ] ++ config.hyprland-nix-wrapped.extraPackages;
-        buildInputs = [ pkgs.makeWrapper ];
-        postBuild = ''
-          wrapProgram $out/bin/Hyprland \
-            --add-flags "-c ${entrypointLua}"
-        '';
-      }).overrideAttrs
-        (old: {
-          meta = (old.meta or { }) // {
-            mainProgram = "Hyprland";
-          };
-        });
-  };
+      wrappedPackage =
+        (pkgs.symlinkJoin {
+          name = "hyprland-nix-wrapped";
+          paths = [ pkgs.hyprland ] ++ cfg.extraPackages;
+          buildInputs = [ pkgs.makeWrapper ];
+          postBuild = ''
+            wrapProgram $out/bin/Hyprland \
+              --add-flags "-c ${entrypointLua}"
+          '';
+        }).overrideAttrs
+          (old: {
+            meta = (old.meta or { }) // {
+              mainProgram = "Hyprland";
+            };
+          });
+    in
+    lib.mkIf cfg.enable (lib.mkMerge [
+      {
+        hyprland-nix-wrapped.package = wrappedPackage;
+      }
+      (lib.mkIf (lib.hasAttrByPath [ "home" "packages" ] options) {
+        home.packages = [ wrappedPackage ];
+      })
+      (lib.mkIf (lib.hasAttrByPath [ "environment" "systemPackages" ] options) {
+        environment.systemPackages = [ wrappedPackage ];
+      })
+    ]);
 }

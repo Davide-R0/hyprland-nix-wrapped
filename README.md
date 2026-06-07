@@ -34,9 +34,12 @@ di base) e testare quello che si vuole.
 poi quanod is ha finito rimuovere la cattura premendo nuovamente
 `Ctrl + Alt + G` e chiudere la finestra.
 
-## Come usarlo in nixos
+## Come usarlo in NixOS / Home Manager
 
-Nel falke principale:
+Grazie al modulo integrato, non è più necessario aggiungere manualmente il
+pacchetto alla lista dei pacchetti installati. Basta abilitare il modulo.
+
+### 1. Aggiungere l'input al Flake principale
 
 ```nix
 inputs.hyprland-nix-wrapped = {
@@ -45,40 +48,49 @@ inputs.hyprland-nix-wrapped = {
 };
 ```
 
-Nel home manager:
+### 2. Importare e configurare il modulo
+
+Puoi usare questo modulo sia direttamente in **NixOS** che tramite **Home
+Manager**.
+
+#### In Home Manager
 
 ```nix
-# Importare il modulo creato
-imports = [
-  inputs.hyprland-nix-wrapped.nixosModules.default
-];
+# imports = [ inputs.hyprland-nix-wrapped.homeManagerModules.default ];
 
-# Per sicurezza si puù disattivare il modulo standard di hyprland
-wayland.windowManager.hyprland.enable = false;
-
-# Configurazione hyprland personalizzato
 hyprland-nix-wrapped = {
+  enable = true; # Attiva il modulo e installa automaticamente il pacchetto
+
   terminal = "${pkgs.alacritty}/bin/alacritty";
   browser = "${pkgs.brave}/bin/brave";
 
-  # Opzione custom creata
+  # Opzioni custom
   displayScale = "1.2";
 
   plugins = with pkgs; [
     hyprlandPlugins.hyprbars
   ];
-  # Qui vanno pachcetit extra come wofi o waybar, ecc...
+
+  # Pacchetti extra inclusi nel wrapper (es. wofi, waybar, ecc...)
   extraPackages = with pkgs; [
-    #wofi
-    #grim
+    wofi
+    grim
+    slurp
   ];
 };
-
-# Mettere il pacchetto risultante nei pacchetti di sistema
-# così si può avviare dal login manager (SDDM/Tuigreet/ecc)
-home.packages = [
-  config.my-hyprland.package
-];
 ```
 
-questo si puo mettere dentro ad un modulo di flake-parts se si vuole.
+#### In NixOS (System wide)
+
+```nix
+# imports = [ inputs.hyprland-nix-wrapped.nixosModules.default ];
+
+hyprland-nix-wrapped = {
+  enable = true;
+  # ... stessa configurazione sopra ...
+};
+```
+
+Il modulo si occuperà di creare il pacchetto Hyprland wrappato con la tua
+configurazione Lua e di aggiungerlo automaticamente a `home.packages` (se usato
+in Home Manager) o `environment.systemPackages` (se usato in NixOS).

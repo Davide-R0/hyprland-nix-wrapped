@@ -32,9 +32,29 @@
           pkgs = import nixpkgs { inherit system; };
 
           eval = nixpkgs.lib.evalModules {
-            modules = [ ./module.nix ];
+            modules = [
+              ./module.nix
+              {
+                config = {
+                  # Per l'output packages, abilitiamo il modulo ma non iniettiamo home.packages
+                  # per evitare errori di opzioni mancanti se valutato fuori da Home Manager.
+                  hyprland-nix-wrapped.enable = true;
+                };
+                # Mocking home.packages and environment.systemPackages to avoid evaluation errors
+                options.home.packages = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.listOf nixpkgs.lib.types.package;
+                  default = [ ];
+                };
+                options.environment.systemPackages = nixpkgs.lib.mkOption {
+                  type = nixpkgs.lib.types.listOf nixpkgs.lib.types.package;
+                  default = [ ];
+                };
+                }
+                ];
+
             specialArgs = { inherit inputs pkgs; };
           };
+
         in
         {
           hyprland = eval.config.hyprland-nix-wrapped.package;
@@ -43,8 +63,10 @@
       );
 
       nixosModules.default = ./module.nix;
+      homeModules.default = ./module.nix;
 
       devShells = forAllSystems (
+
         system:
         let
           pkgs = import nixpkgs { inherit system; };
