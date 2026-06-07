@@ -49,6 +49,26 @@ in
       default = "1";
       description = "Fattore di scaling globale del monitor (es. 1, 1.5, 2)";
     };
+    monitors = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ", preferred, auto, 1" ];
+      description = "Lista di monitor da configurare.";
+    };
+    workspaces = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Lista di workspace da configurare.";
+    };
+    extraBind = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Lista di keybindings extra (formato stringa hyprland).";
+    };
+    extraExecOnce = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      description = "Lista di comandi da eseguire all'avvio (in aggiunta a quelli base).";
+    };
     extraInit = lib.mkOption {
       type = lib.types.lines;
       default = "";
@@ -77,11 +97,24 @@ in
           enableHyprbars = ${if cfg.enableHyprbars then "true" else "false"},
           extraWindowRule = ${if cfg.extraWindowRule then "true" else "false"},
           displayScale = "${cfg.displayScale}",
+          monitors = {
+            ${lib.concatMapStringsSep ",\n            " (m: "'${m}'") cfg.monitors}
+          },
+          workspaces = {
+            ${lib.concatMapStringsSep ",\n            " (w: "'${w}'") cfg.workspaces}
+          },
+          extraBind = {
+            ${lib.concatMapStringsSep ",\n            " (b: "'${b}'") cfg.extraBind}
+          },
+          extraExecOnce = {
+            ${lib.concatMapStringsSep ",\n            " (e: "'${e}'") cfg.extraExecOnce}
+          },
           extraInit = [[
             ${cfg.extraInit}
           ]],
-          
+
           pkgs = {
+
             ${lib.concatMapStringsSep ",\n            " (
               p: "${p.pname or "unknown"} = '${p}'"
             ) cfg.extraPackages}
@@ -124,15 +157,17 @@ in
             };
           });
     in
-    lib.mkIf cfg.enable (lib.mkMerge [
-      {
-        hyprland-nix-wrapped.package = wrappedPackage;
-      }
-      (lib.mkIf (lib.hasAttrByPath [ "home" "packages" ] options) {
-        home.packages = [ wrappedPackage ];
-      })
-      (lib.mkIf (lib.hasAttrByPath [ "environment" "systemPackages" ] options) {
-        environment.systemPackages = [ wrappedPackage ];
-      })
-    ]);
+    lib.mkIf cfg.enable (
+      lib.mkMerge [
+        {
+          hyprland-nix-wrapped.package = wrappedPackage;
+        }
+        (lib.mkIf (lib.hasAttrByPath [ "home" "packages" ] options) {
+          home.packages = [ wrappedPackage ];
+        })
+        (lib.mkIf (lib.hasAttrByPath [ "environment" "systemPackages" ] options) {
+          environment.systemPackages = [ wrappedPackage ];
+        })
+      ]
+    );
 }

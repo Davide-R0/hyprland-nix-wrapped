@@ -49,8 +49,8 @@
                   type = nixpkgs.lib.types.listOf nixpkgs.lib.types.package;
                   default = [ ];
                 };
-                }
-                ];
+              }
+            ];
 
             specialArgs = { inherit inputs pkgs; };
           };

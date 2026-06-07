@@ -138,3 +138,10 @@ hl.bind("CTRL + ALT + G", hl.dsp.submap("passthru"))
 hl.define_submap("passthru", function()
     hl.bind("CTRL + ALT + G", hl.dsp.submap("reset"))
 end)
+
+-- Extra Binds from Nix
+if NIX.extraBind and #NIX.extraBind > 0 then
+    for _, b in ipairs(NIX.extraBind) do
+        hl.exec_cmd("hyprctl keyword bind " .. b)
+    end
+end

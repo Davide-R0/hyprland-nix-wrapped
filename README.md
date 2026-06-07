@@ -91,6 +91,41 @@ hyprland-nix-wrapped = {
 };
 ```
 
+#### Esempio di configurazione completa (stile vecchia config)
+
+```nix
+hyprland-nix-wrapped = {
+  enable = true;
+
+  # Configurazione monitor
+  monitors = [
+    "HDMI-A-1, 3440x1440@100.00, auto, 1.25"
+  ];
+
+  # Workspace persistenti o configurazioni specifiche
+  workspaces = [
+    "1, persistent:true"
+    "2, persistent:true"
+  ];
+
+  # Comandi eseguiti una sola volta all'avvio
+  extraExecOnce = [
+    "sleep 5 && dms ipc call plugins disable compactNetSpeedV8"
+  ];
+
+  # Keybindings extra in formato Hyprland
+  extraBind = [
+    "$mod, X, exec, echo 'Hello World'"
+  ];
+
+  extraWindowRule = false;
+  
+  # Altre opzioni...
+  terminal = "${pkgs.alacritty}/bin/alacritty";
+  browser = "${pkgs.brave}/bin/brave";
+};
+```
+
 Il modulo si occuperà di creare il pacchetto Hyprland wrappato con la tua
 configurazione Lua e di aggiungerlo automaticamente a `home.packages` (se usato
 in Home Manager) o `environment.systemPackages` (se usato in NixOS).

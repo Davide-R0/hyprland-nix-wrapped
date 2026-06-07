@@ -44,6 +44,14 @@ hl.config({
 
     animations = {
         enabled = true,
+        animation = {
+            "windowsIn, 1, 2, default",
+            "windowsOut, 1, 2, default",
+            "windowsMove, 1, 3, default",
+            "fade, 1, 2, default",
+            "border, 1, 2, default",
+            "workspaces, 1, 5, default",
+        },
     },
 
     dwindle = {
@@ -80,6 +88,13 @@ hl.on("hyprland.start", function()
     " --systemd DISPLAY HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE")
     hl.exec_cmd("systemctl --user stop hyprland-session.target")
     hl.exec_cmd("systemctl --user start hyprland-session.target")
+
+    -- Execute commands from Nix extraExecOnce option
+    if NIX.extraExecOnce and #NIX.extraExecOnce > 0 then
+        for _, cmd in ipairs(NIX.extraExecOnce) do
+            hl.exec_cmd(cmd)
+        end
+    end
 
     -- Execute commands from Nix extraInit option
     if NIX.extraInit and NIX.extraInit ~= "" then

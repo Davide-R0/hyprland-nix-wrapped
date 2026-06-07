@@ -1,18 +1,16 @@
 local NIX = require("nix-env")
 
--- TODO: prendere la config da nix
-
-hl.monitor({
-    output   = "HDMI-A-1",
-    mode     = "3440x1440@100.00",
-    position = "auto",
-    scale    = tonumber(NIX.displayScale) or 1.25,
-})
-
--- Fallback/Default monitor if needed
-hl.monitor({
-    output = "",
-    mode = "preferred",
-    position = "auto",
-    scale = tonumber(NIX.displayScale) or 1,
-})
+-- Apply monitors from Nix config
+if NIX.monitors and #NIX.monitors > 0 then
+    for _, m in ipairs(NIX.monitors) do
+        hl.exec_cmd("hyprctl keyword monitor " .. m)
+    end
+else
+    -- Fallback/Default monitor if none provided
+    hl.monitor({
+        output = "",
+        mode = "preferred",
+        position = "auto",
+        scale = tonumber(NIX.displayScale) or 1,
+    })
+end
