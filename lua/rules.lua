@@ -1,6 +1,7 @@
 local NIX = require("nix-env")
 
 -- Window Rules
+
 hl.window_rule({
     name    = "no_anim_quickshell",
     match   = { class = ".*org.quickshell.*" },
@@ -32,6 +33,7 @@ hl.window_rule({
 })
 
 -- Extra Rules from NIX config
+
 if NIX.extraWindowRule then
     hl.window_rule({
         name = "opacity_browsers",

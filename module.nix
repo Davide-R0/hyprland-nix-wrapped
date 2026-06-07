@@ -50,7 +50,6 @@ in
       default = "";
       description = "Comandi extra da eseguire all'avvio (es. dms run)";
     };
-    # Aggiungiamo un'opzione di sola lettura per esporre il pacchetto finale
     package = lib.mkOption {
       type = lib.types.package;
       readOnly = true;
@@ -62,12 +61,10 @@ in
       let
         baseDir = ./.;
 
-        # Troviamo tutti i file .lua in lua/config
-        configFiles = builtins.attrNames (builtins.readDir ./lua/config);
+        configFiles = builtins.attrNames (builtins.readDir ./lua/);
         luaModules = builtins.filter (lib.hasSuffix ".lua") configFiles;
         moduleNames = map (lib.removeSuffix ".lua") luaModules;
 
-        # Generiamo una directory contenente nix-env.lua
         nixEnvDir = pkgs.writeTextDir "nix-env.lua" ''
           local NIX = {
             terminal = "${config.hyprland-nix-wrapped.terminal}",
@@ -99,8 +96,6 @@ ${config.hyprland-nix-wrapped.extraInit}
           return NIX
         '';
 
-        # Il motore interno Lua di Hyprland potrebbe ignorare la variabile d'ambiente LUA_PATH.
-        # Creiamo un file di entrypoint che configura i path manualmente e poi carica init.lua.
         entrypointLua = pkgs.writeText "hyprland-entrypoint.lua" ''
           -- Iniettiamo i path di Nix e del progetto nel motore Lua
           package.path = "${nixEnvDir}/?.lua;${baseDir}/?.lua;${luaConfigDir}/?.lua;" .. package.path
@@ -110,7 +105,6 @@ ${config.hyprland-nix-wrapped.extraInit}
         '';
 
       in
-      # Creiamo il wrapper finale
       (pkgs.symlinkJoin {
         name = "hyprland-nix-wrapped";
         paths = [ pkgs.hyprland ] ++ config.hyprland-nix-wrapped.extraPackages;

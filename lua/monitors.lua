@@ -1,8 +1,6 @@
 local NIX = require("nix-env")
 
--- Monitor Configuration
--- Note: HDMI-A-1 from hyprland.lua might be system-specific. 
--- We'll keep the logic but maybe allow fallback.
+-- TODO: prendere la config da nix
 
 hl.monitor({
     output   = "HDMI-A-1",

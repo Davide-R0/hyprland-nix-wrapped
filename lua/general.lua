@@ -8,7 +8,7 @@ hl.config({
         gaps_out = 8,
         layout = "dwindle",
     },
-    
+
     input = {
         kb_layout = "it",
         kb_options = "caps:escape,shift:both_capslock",
@@ -68,7 +68,7 @@ hl.env("SSH_AUTH_SOCK", "$XDG_RUNTIME_DIR/gcr/ssh")
 hl.on("hyprland.start", function()
     -- Check if we are running nested (inside another Wayland/X11 session)
     local is_nested = os.getenv("WAYLAND_DISPLAY") ~= nil or os.getenv("DISPLAY") ~= nil
-    
+
     if is_nested then
         print("[Hyprland] Nested session detected. Skipping autostart to protect host.")
         return
@@ -76,10 +76,11 @@ hl.on("hyprland.start", function()
 
     -- Environment setup (Only for main session)
     local dbus_bin = (NIX.pkgs.dbus or "/usr") .. "/bin/dbus-update-activation-environment"
-    hl.exec_cmd(dbus_bin .. " --systemd DISPLAY HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE")
+    hl.exec_cmd(dbus_bin ..
+    " --systemd DISPLAY HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE")
     hl.exec_cmd("systemctl --user stop hyprland-session.target")
     hl.exec_cmd("systemctl --user start hyprland-session.target")
-    
+
     -- Execute commands from Nix extraInit option
     if NIX.extraInit and NIX.extraInit ~= "" then
         -- We might need to split by lines if exec_cmd only takes one command
@@ -89,14 +90,14 @@ hl.on("hyprland.start", function()
             end
         end
     end
-    
+
     -- Authentication agent
     local polkit_agent = NIX.pkgs["polkit-gnome"] or "/usr/libexec/polkit-gnome-authentication-agent-1"
-    if type(polkit_agent) == "string" and polkit_agent:sub(1,1) == "/" then
+    if type(polkit_agent) == "string" and polkit_agent:sub(1, 1) == "/" then
         if polkit_agent:find("/nix/store") then
-             hl.exec_cmd(polkit_agent .. "/libexec/polkit-gnome-authentication-agent-1")
+            hl.exec_cmd(polkit_agent .. "/libexec/polkit-gnome-authentication-agent-1")
         else
-             hl.exec_cmd(polkit_agent)
+            hl.exec_cmd(polkit_agent)
         end
     end
 end)

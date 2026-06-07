@@ -1,8 +1,8 @@
-Per vedere la tty attuale:
+# Hyprland lua config wrapped into nix
 
-## Avivarlo nativamente
+## Avviarlo nativamente
 
-agigungere alla config nix o conf di hyprland questi comandi:
+Aggiungere alla config nix o conf di hyprland questi comandi:
 
 ```conf
 # -----------------------------------------------
@@ -34,42 +34,13 @@ di base) e testare quello che si vuole.
 poi quanod is ha finito rimuovere la cattura premendo nuovamente
 `Ctrl + Alt + G` e chiudere la finestra.
 
-## Avivarlo tramite tty
+## Come usarlo in nixos
 
-apri u'altra tty che non sia la tua: `Ctrl + Alt + FN`, con N un numero tra 1 e
-7 che non sia la tua tty attuale. per sapere la tty attuale:
-
-```bash
-w -h | grep "$USER" | awk '{print $2}' | grep "tty" || echo "Probabilmente tty1 o tty7"
-```
-
-una volta entrata in quelal tty, fare il login utente, posi spostarsi nella home
-del progetto ed avviarlo:
-
-```bash
-nix run .#hyprland
-```
-
-ora potria muoverti tra le tty aperte con il comando di sopra.
-
-## Con VM
-
-è consiglaito avere almeno 2 core liberi e 4gb di ram liberi.
-
-```bash
-nix run .#nixosConfigurations.test-vm.config.system.build.vm
-```
-
-poi quando si è dentro si puù usare `Ctrl + Alt + G` per catturare e decatturare
-i tasti dall'interno (senza questo non funziona aprire le finestre all'interno)
-
-## Come usarlo nella config os
-
-nel falke principale
+Nel falke principale:
 
 ```nix
 inputs.hyprland-nix-wrapped = {
-  url = "github:TuoNome/hyprland-nix-wrapped";
+  url = "github:Davide-Ro/hyprland-nix-wrapped";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 ```
@@ -77,40 +48,37 @@ inputs.hyprland-nix-wrapped = {
 Nel home manager:
 
 ```nix
-{ config, pkgs, inputs, ... }: {
+# Importare il modulo creato
+imports = [
+  inputs.hyprland-nix-wrapped.nixosModules.default
+];
 
-  # Importare il modulo creato
-  imports = [
-    inputs.hyprland-nix-wrapped.nixosModules.default
+# Per sicurezza si puù disattivare il modulo standard di hyprland
+wayland.windowManager.hyprland.enable = false;
+
+# Configurazione hyprland personalizzato
+hyprland-nix-wrapped = {
+  terminal = "${pkgs.alacritty}/bin/alacritty";
+  browser = "${pkgs.brave}/bin/brave";
+
+  # Opzione custom creata
+  displayScale = "1.2";
+
+  plugins = with pkgs; [
+    hyprlandPlugins.hyprbars
   ];
-
-  # Per sicurezza si puù disattivare il modulo standard di hyprland
-  wayland.windowManager.hyprland.enable = false;
-
-  # Configurazione hyprland personalizzato
-  hyprland-nix-wrapped = {
-    terminal = "${pkgs.alacritty}/bin/alacritty";
-    browser = "${pkgs.brave}/bin/brave";
-
-    # Opzione custom creata
-    displayScale = "1.2";
-
-    plugins = with pkgs; [
-      hyprlandPlugins.hyprbars
-    ];
-    # Qui vanno pachcetit extra come wofi o waybar, ecc...
-    extraPackages = with pkgs; [
-      #wofi
-      #grim
-    ];
-  };
-
-  # Mettere il pacchetto risultante nei pacchetti di sistema
-  # così si può avviare dal login manager (SDDM/Tuigreet/ecc)
-  home.packages = [
-    config.my-hyprland.package
+  # Qui vanno pachcetit extra come wofi o waybar, ecc...
+  extraPackages = with pkgs; [
+    #wofi
+    #grim
   ];
-}
+};
+
+# Mettere il pacchetto risultante nei pacchetti di sistema
+# così si può avviare dal login manager (SDDM/Tuigreet/ecc)
+home.packages = [
+  config.my-hyprland.package
+];
 ```
 
 questo si puo mettere dentro ad un modulo di flake-parts se si vuole.

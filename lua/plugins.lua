@@ -1,8 +1,6 @@
 local NIX = require("nix-env")
 
--- Configurazione Plugins
--- NOTA: Hyprbars sembra non riconoscere le chiavi standard in questa versione di Hyprland Lua.
--- Commentiamo la configurazione per evitare errori al lancio finché non viene risolto il build dei plugin.
+-- NOTE: Hyprbars sembra non riconoscere le chiavi standard in questa versione di Hyprland Lua.
 
 --[[
 hl.config({
@@ -14,7 +12,7 @@ hl.config({
         }
     }
 })
-]]--
+]] --
 
 -- Messaggio di debug per confermare il caricamento del file
 print("[Hyprland] plugins.lua loaded (hyprbars config disabled temporarily)")
