@@ -41,22 +41,14 @@
               ./module.nix
               {
                 config = {
-                  # Per l'output packages, abilitiamo il modulo ma non iniettiamo home.packages
-                  # per evitare errori di opzioni mancanti se valutato fuori da Home Manager.
                   hyprland-nix-wrapped.enable = true;
                 };
-                # Mocking home.packages and environment.systemPackages to avoid evaluation errors
                 options.home.packages = nixpkgs.lib.mkOption {
-                  type = nixpkgs.lib.types.listOf nixpkgs.lib.types.package;
-                  default = [ ];
-                };
-                options.environment.systemPackages = nixpkgs.lib.mkOption {
                   type = nixpkgs.lib.types.listOf nixpkgs.lib.types.package;
                   default = [ ];
                 };
               }
             ];
-
             specialArgs = { inherit inputs pkgs; };
           };
 
@@ -96,6 +88,10 @@
                     enableHyprbars = true,
                     extraWindowRule = true,
                     displayScale = "1",
+                    monitors = { ", preferred, auto, 1" },
+                    workspaces = {},
+                    extraBind = {},
+                    extraExecOnce = {},
                     extraInit = "",
                     pkgs = {},
                     plugins = {},

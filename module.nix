@@ -162,10 +162,14 @@ in
         {
           hyprland-nix-wrapped.package = wrappedPackage;
         }
-        (lib.mkIf (lib.hasAttrByPath [ "home" "packages" ] options) {
+        # Caso Home Manager: l'opzione 'home.packages' esiste e siamo in un contesto HM
+        (lib.mkIf (options ? home.packages) {
           home.packages = [ wrappedPackage ];
         })
-        (lib.mkIf (lib.hasAttrByPath [ "environment" "systemPackages" ] options) {
+        # Caso NixOS: l'opzione esiste MA non deve esserci 'home.packages'
+        # Questo evita che in una configurazione mista (NixOS + HM) il modulo
+        # tenti di scrivere in 'environment' mentre è valutato dentro HM.
+        (lib.mkIf (options ? environment.systemPackages && !(options ? home.packages)) {
           environment.systemPackages = [ wrappedPackage ];
         })
       ]
