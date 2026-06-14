@@ -151,7 +151,9 @@
 
       makeWrappedPackage = upstream:
         (pkgs.symlinkJoin {
-          name = "hyprland-nix-wrapped";
+          name = "hyprland-nix-wrapped-${upstream.version or "0.55.2"}";
+          pname = "hyprland-nix-wrapped";
+          version = upstream.version or "0.55.2";
           paths = [ upstream ] ++ cfg.extraPackages;
           buildInputs = [ pkgs.makeWrapper ];
           postBuild = ''
