@@ -85,9 +85,9 @@ hl.on("hyprland.start", function()
     -- Environment setup (Only for main session)
     local dbus_pkg = NIX.pkgs["dbus"]
     local dbus_bin = dbus_pkg and (dbus_pkg .. "/bin/dbus-update-activation-environment") or
-    "dbus-update-activation-environment"
+        "dbus-update-activation-environment"
     hl.exec_cmd(dbus_bin ..
-    " --systemd DISPLAY HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE")
+        " --systemd DISPLAY HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE")
 
     --hl.exec_cmd("systemctl --user stop hyprland-session.target")
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")

@@ -157,13 +157,18 @@
           paths = [ upstream ] ++ cfg.extraPackages;
           buildInputs = [ pkgs.makeWrapper ];
           postBuild = ''
-            wrapProgram $out/bin/Hyprland \
-              --add-flags "-c ${entrypointLua}"
-              
-            if [ -f $out/bin/start-hyprland ]; then
-              wrapProgram $out/bin/start-hyprland \
-                --add-flags "-c ${entrypointLua}"
+            mv $out/bin/Hyprland $out/bin/.Hyprland-wrapped
+            cat <<EOF > $out/bin/Hyprland
+            #!/usr/bin/env bash
+            
+            # Se è start-hyprland a chiamare per chiedere la versione o le info di sistema, bypassiamo il config
+            if [[ " \$@ " =~ " --version " ]] || [[ " \$@ " =~ " -i " ]]; then
+                exec -a "\$0" "$out/bin/.Hyprland-wrapped" "\$@"
+            else
+                exec -a "\$0" "$out/bin/.Hyprland-wrapped" -c "${entrypointLua}" "\$@"
             fi
+            EOF
+            chmod +x $out/bin/Hyprland
           '';
         }).overrideAttrs
           (old: {
