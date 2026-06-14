@@ -157,6 +157,11 @@
           postBuild = ''
             wrapProgram $out/bin/Hyprland \
               --add-flags "-c ${entrypointLua}"
+              
+            if [ -f $out/bin/start-hyprland ]; then
+              wrapProgram $out/bin/start-hyprland \
+                --add-flags "-c ${entrypointLua}"
+            fi
           '';
         }).overrideAttrs
           (old: {
