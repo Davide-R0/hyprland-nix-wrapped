@@ -174,19 +174,6 @@
           hyprland-nix-wrapped.package = wrappedPackage;
         }
 
-        # Integrazione NixOS
-        # Usiamo optionalAttrs per nascondere completamente la chiave 'environment' a Home Manager
-        (lib.optionalAttrs (options ? environment && !(options ? home.file)) {
-          environment.systemPackages = [ wrappedPackage ];
-          programs.hyprland.package = lib.mkForce wrappedPackage;
-        })
-
-        # Integrazione Home Manager
-        # Usiamo optionalAttrs per nascondere 'home' e 'wayland' a NixOS
-        (lib.optionalAttrs (options ? home.file) {
-          home.packages = [ wrappedPackage ];
-          wayland.windowManager.hyprland.package = lib.mkForce wrappedPackage;
-        })
       ]
     );
 }
