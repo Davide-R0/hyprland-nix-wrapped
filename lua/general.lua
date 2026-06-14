@@ -83,10 +83,14 @@ hl.on("hyprland.start", function()
     end
 
     -- Environment setup (Only for main session)
-    local dbus_bin = (NIX.pkgs.dbus or "/usr") .. "/bin/dbus-update-activation-environment"
+    local dbus_pkg = NIX.pkgs["dbus"]
+    local dbus_bin = dbus_pkg and (dbus_pkg .. "/bin/dbus-update-activation-environment") or
+    "dbus-update-activation-environment"
     hl.exec_cmd(dbus_bin ..
     " --systemd DISPLAY HYPRLAND_INSTANCE_SIGNATURE WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE")
-    hl.exec_cmd("systemctl --user stop hyprland-session.target")
+
+    --hl.exec_cmd("systemctl --user stop hyprland-session.target")
+    hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
     hl.exec_cmd("systemctl --user start hyprland-session.target")
 
     -- Execute commands from Nix extraExecOnce option
@@ -103,16 +107,6 @@ hl.on("hyprland.start", function()
             if line:match("%S") then
                 hl.exec_cmd(line)
             end
-        end
-    end
-
-    -- Authentication agent
-    local polkit_agent = NIX.pkgs["polkit-gnome"] or "/usr/libexec/polkit-gnome-authentication-agent-1"
-    if type(polkit_agent) == "string" and polkit_agent:sub(1, 1) == "/" then
-        if polkit_agent:find("/nix/store") then
-            hl.exec_cmd(polkit_agent .. "/libexec/polkit-gnome-authentication-agent-1")
-        else
-            hl.exec_cmd(polkit_agent)
         end
     end
 end)

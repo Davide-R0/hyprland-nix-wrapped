@@ -8,8 +8,8 @@ local function dms(cmd)
 end
 
 -- Basic Binds
-hl.bind(mod .. " + Return", hl.dsp.exec_cmd("alacritty"))
-hl.bind("SUPER + W", hl.dsp.exec_cmd("brave"))
+hl.bind(mod .. " + Return", hl.dsp.exec_cmd(NIX.terminal))
+hl.bind("SUPER + W", hl.dsp.exec_cmd(NIX.browser))
 hl.bind("SUPER + F", hl.dsp.exec_cmd("nautilus"))
 hl.bind("SUPER + B", dms("ipc call notepad toggle"))
 hl.bind("SUPER + C", dms("ipc call clipboard toggle"))
@@ -30,7 +30,9 @@ hl.bind(mod .. " + SHIFT + O", hl.dsp.dpms("toggle"))
 hl.bind(mod .. " + SHIFT + Q", hl.dsp.window.close())
 hl.bind(mod .. " + C", hl.dsp.window.close())
 hl.bind(mod .. " + F", hl.dsp.window.fullscreen())
-hl.bind(mod .. " + SHIFT + F", hl.dsp.exec_cmd("hyprctl --batch dispatch togglefloating; dispatch resizeactive exact 40% 40%; dispatch moveactive exact 59% 58%"))
+hl.bind(mod .. " + SHIFT + F",
+    hl.dsp.exec_cmd(
+    "hyprctl --batch dispatch togglefloating; dispatch resizeactive exact 40% 40%; dispatch moveactive exact 59% 58%"))
 hl.bind(mod .. " + T", hl.dsp.layout("togglesplit"))
 hl.bind(mod .. " + P", hl.dsp.window.pin())
 hl.bind(mod .. " + O", hl.dsp.exec_cmd("hyprctl setprop active opaque toggle"))
@@ -100,7 +102,9 @@ hl.bind(mod .. " + bracketright", hl.dsp.layout("preselect r"))
 hl.bind(mod .. " + Home", hl.dsp.focus({ window = "first" }))
 hl.bind(mod .. " + End", hl.dsp.focus({ window = "last" }))
 
-hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd("hyprctl --batch dispatch setfloating; dispatch resizeactive exact 60% 60%; dispatch centerwindow; dispatch movetoworkspace special:scratch"))
+hl.bind(mod .. " + SHIFT + S",
+    hl.dsp.exec_cmd(
+    "hyprctl --batch dispatch setfloating; dispatch resizeactive exact 60% 60%; dispatch centerwindow; dispatch movetoworkspace special:scratch"))
 hl.bind(mod .. " + SHIFT + D", hl.dsp.exec_cmd("hyprctl --batch dispatch movetoworkspace +0; dispatch settiled"))
 hl.bind(mod .. " + S", hl.dsp.workspace.toggle_special("scratch"))
 

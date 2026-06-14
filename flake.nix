@@ -18,7 +18,9 @@
   };
 
   # TODO: cambiarlo in input con un nome
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  };
 
   outputs =
     { self, nixpkgs }@inputs:
@@ -63,7 +65,6 @@
       homeModules.default = ./module.nix;
 
       devShells = forAllSystems (
-
         system:
         let
           pkgs = import nixpkgs { inherit system; };
@@ -85,7 +86,6 @@
                     terminal = "alacritty",
                     browser = "firefox",
                     dmsPath = "dms",
-                    enableHyprbars = true,
                     extraWindowRule = true,
                     displayScale = "1",
                     monitors = { ", preferred, auto, 1" },

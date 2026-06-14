@@ -5,17 +5,12 @@
   options,
   ...
 }:
-let
-  luaConfigDir = ./lua;
-in
 {
   options.hyprland-nix-wrapped = {
     enable = lib.mkEnableOption "Hyprland Nix Wrapped";
-    # ... rest of options ...
-
     terminal = lib.mkOption {
       type = lib.types.str;
-      default = "${pkgs.alacritty}/bin/alacritty";
+      default = "${pkgs.ghostty}/bin/ghostty";
     };
     browser = lib.mkOption {
       type = lib.types.str;
@@ -42,7 +37,10 @@ in
     };
     extraPackages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
-      default = [ pkgs.alacritty ];
+      default = [
+        pkgs.ghostty
+        pkgs.dbus
+      ];
     };
     displayScale = lib.mkOption {
       type = lib.types.str;
@@ -88,6 +86,7 @@ in
       configFiles = builtins.attrNames (builtins.readDir ./lua);
       luaModules = builtins.filter (lib.hasSuffix ".lua") configFiles;
       moduleNames = map (lib.removeSuffix ".lua") luaModules;
+      luaConfigDir = ./lua;
 
       nixEnvDir = pkgs.writeTextDir "nix-env.lua" ''
         local NIX = {
@@ -114,15 +113,14 @@ in
           ]],
 
           pkgs = {
-
             ${lib.concatMapStringsSep ",\n            " (
-              p: "${p.pname or "unknown"} = '${p}'"
+              p: "[\"${if p ? pname then p.pname else "unknown"}\"] = '${p}'"
             ) cfg.extraPackages}
           },
           
           plugins = {
             ${lib.concatMapStringsSep ",\n            " (
-              p: "'${p}/lib/hyprland/lib${p.pname}.so'"
+              p: "'${p}/lib/hyprland/lib${if p ? pname then p.pname else "unknown"}.so'"
             ) cfg.plugins}
           },
           
@@ -134,11 +132,16 @@ in
       '';
 
       entrypointLua = pkgs.writeText "hyprland-entrypoint.lua" ''
-        -- Iniettiamo i path di Nix e del progetto nel motore Lua
-        package.path = "${nixEnvDir}/?.lua;${baseDir}/?.lua;${luaConfigDir}/?.lua;" .. package.path
+        -- Setup path
+        package.path = "${nixEnvDir}/?.lua;" .. package.path
+        package.path = "${baseDir}/?.lua;" .. package.path
+        package.path = "${luaConfigDir}/?.lua;" .. package.path
 
-        -- Passiamo il controllo al file di configurazione dell'utente
-        require("init")
+        -- Caricamento
+        local ok, err = pcall(require, "init")
+        if not ok then
+            print("[Hyprland-Lua] ERRORE CRITICO: Impossibile caricare init.lua: " .. err)
+        end
       '';
 
       wrappedPackage =
@@ -162,14 +165,43 @@ in
         {
           hyprland-nix-wrapped.package = wrappedPackage;
         }
-        # Home Manager: Definizione sicura solo se l'opzione esiste
-        (lib.optionalAttrs (options ? home.packages) {
-          home.packages = [ wrappedPackage ];
+
+        # Integrazione NixOS
+        (lib.optionalAttrs (options ? programs.hyprland) {
+          programs.hyprland = {
+            enable = lib.mkDefault true;
+            package = lib.mkForce wrappedPackage;
+          };
         })
-        # NixOS: Definizione sicura solo se l'opzione esiste E non siamo in HM
-        (lib.optionalAttrs (options ? environment.systemPackages && !(options ? home.packages)) {
-          environment.systemPackages = [ wrappedPackage ];
+
+        # Integrazione Home Manager
+        (lib.optionalAttrs (options ? wayland.windowManager.hyprland) {
+          wayland.windowManager.hyprland = {
+            enable = lib.mkDefault true;
+            package = lib.mkForce wrappedPackage;
+          };
         })
+
+        # Fallback: aggiunta ai pacchetti se i moduli sopra non sono usati o abilitati
+        (lib.optionalAttrs
+          (
+            options ? home.packages
+            && !((options ? wayland.windowManager.hyprland) && config.wayland.windowManager.hyprland.enable)
+          )
+          {
+            home.packages = [ wrappedPackage ];
+          }
+        )
+
+        (lib.optionalAttrs
+          (
+            options ? environment.systemPackages
+            && !((options ? programs.hyprland) && config.programs.hyprland.enable)
+          )
+          {
+            environment.systemPackages = [ wrappedPackage ];
+          }
+        )
       ]
     );
 }
