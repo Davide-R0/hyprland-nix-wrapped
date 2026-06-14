@@ -166,33 +166,36 @@
           hyprland-nix-wrapped.package = wrappedPackage;
         }
 
-        # Integrazione NixOS
-        (lib.mkIf (options ? programs.hyprland) {
+        # Integrazione NixOS (Solo se siamo in ambiente NixOS)
+        (lib.mkIf (options ? environment && options ? programs.hyprland) {
           programs.hyprland = {
             enable = lib.mkDefault true;
             package = lib.mkForce wrappedPackage;
           };
+          environment.systemPackages = lib.mkIf (!config.programs.hyprland.enable) [
+            wrappedPackage
+          ];
         })
 
-        # Integrazione Home Manager
-        (lib.mkIf (options ? wayland.windowManager.hyprland) {
+        # Integrazione Home Manager (Solo se siamo in ambiente Home Manager)
+        (lib.mkIf (options ? home && options ? wayland.windowManager.hyprland) {
           wayland.windowManager.hyprland = {
             enable = lib.mkDefault true;
             package = lib.mkForce wrappedPackage;
           };
-        })
-
-        # Fallback: aggiunta ai pacchetti se i moduli dedicati non sono abilitati
-        (lib.mkIf (options ? home.packages) {
-          home.packages = lib.mkIf (!(config.wayland.windowManager.hyprland.enable or false)) [
+          home.packages = lib.mkIf (!config.wayland.windowManager.hyprland.enable) [
             wrappedPackage
           ];
         })
 
-        (lib.mkIf (options ? environment.systemPackages) {
-          environment.systemPackages = lib.mkIf (!(config.programs.hyprland.enable or false)) [
-            wrappedPackage
-          ];
+        # Caso limite: Se siamo in HM ma NON c'è il modulo Hyprland di HM (raro)
+        (lib.mkIf (options ? home && !(options ? wayland.windowManager.hyprland)) {
+          home.packages = [ wrappedPackage ];
+        })
+
+        # Caso limite: Se siamo in NixOS ma NON c'è il modulo Hyprland di NixOS (raro)
+        (lib.mkIf (options ? environment && !(options ? programs.hyprland)) {
+          environment.systemPackages = [ wrappedPackage ];
         })
       ]
     );
