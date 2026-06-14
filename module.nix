@@ -163,7 +163,7 @@
             passthru = (upstream.passthru or {}) // {
               providedSessions = [ "hyprland" ];
             };
-            meta = (upstream.meta or { }) // {
+            meta = builtins.removeAttrs (upstream.meta or { }) ["outputsToInstall"] // {
               mainProgram = "Hyprland";
             };
           });
