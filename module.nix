@@ -167,7 +167,7 @@
         }
 
         # Integrazione NixOS
-        (lib.optionalAttrs (options ? programs.hyprland) {
+        (lib.mkIf (options ? programs.hyprland) {
           programs.hyprland = {
             enable = lib.mkDefault true;
             package = lib.mkForce wrappedPackage;
@@ -175,33 +175,25 @@
         })
 
         # Integrazione Home Manager
-        (lib.optionalAttrs (options ? wayland.windowManager.hyprland) {
+        (lib.mkIf (options ? wayland.windowManager.hyprland) {
           wayland.windowManager.hyprland = {
             enable = lib.mkDefault true;
             package = lib.mkForce wrappedPackage;
           };
         })
 
-        # Fallback: aggiunta ai pacchetti se i moduli sopra non sono usati o abilitati
-        (lib.optionalAttrs
-          (
-            options ? home.packages
-            && !((options ? wayland.windowManager.hyprland) && config.wayland.windowManager.hyprland.enable)
-          )
-          {
-            home.packages = [ wrappedPackage ];
-          }
-        )
+        # Fallback: aggiunta ai pacchetti se i moduli dedicati non sono abilitati
+        (lib.mkIf (options ? home.packages) {
+          home.packages = lib.mkIf (!(config.wayland.windowManager.hyprland.enable or false)) [
+            wrappedPackage
+          ];
+        })
 
-        (lib.optionalAttrs
-          (
-            options ? environment.systemPackages
-            && !((options ? programs.hyprland) && config.programs.hyprland.enable)
-          )
-          {
-            environment.systemPackages = [ wrappedPackage ];
-          }
-        )
+        (lib.mkIf (options ? environment.systemPackages) {
+          environment.systemPackages = lib.mkIf (!(config.programs.hyprland.enable or false)) [
+            wrappedPackage
+          ];
+        })
       ]
     );
 }
