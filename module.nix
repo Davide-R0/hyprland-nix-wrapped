@@ -149,10 +149,10 @@
         end
       '';
 
-      wrappedPackage =
+      makeWrappedPackage = upstream:
         (pkgs.symlinkJoin {
           name = "hyprland-nix-wrapped";
-          paths = [ cfg.upstreamPackage ] ++ cfg.extraPackages;
+          paths = [ upstream ] ++ cfg.extraPackages;
           buildInputs = [ pkgs.makeWrapper ];
           postBuild = ''
             wrapProgram $out/bin/Hyprland \
@@ -160,20 +160,21 @@
           '';
         }).overrideAttrs
           (old: {
-            passthru = (cfg.upstreamPackage.passthru or {}) // {
+            passthru = (upstream.passthru or {}) // {
               providedSessions = [ "hyprland" ];
             };
-            meta = (cfg.upstreamPackage.meta or { }) // {
+            meta = (upstream.meta or { }) // {
               mainProgram = "Hyprland";
             };
           });
-    in
-    lib.mkIf cfg.enable (
-      lib.mkMerge [
-        {
-          hyprland-nix-wrapped.package = wrappedPackage;
-        }
 
-      ]
-    );
+      wrappedPackage = let
+        base = makeWrappedPackage cfg.upstreamPackage;
+      in base // {
+        override = args: makeWrappedPackage (cfg.upstreamPackage.override args);
+      };
+    in
+    lib.mkIf cfg.enable {
+      hyprland-nix-wrapped.package = wrappedPackage;
+    };
 }

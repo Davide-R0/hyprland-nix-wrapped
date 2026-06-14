@@ -61,17 +61,19 @@
         }
       );
 
-      nixosModules.default = { pkgs, lib, ... }: {
+      nixosModules.default = { pkgs, lib, config, ... }: {
         imports = [ ./module.nix ];
         config = lib.mkIf pkgs.stdenv.isLinux {
           hyprland-nix-wrapped.upstreamPackage = lib.mkDefault inputs.nixpkgs.legacyPackages.${pkgs.system}.hyprland;
+          programs.hyprland.package = lib.mkIf config.hyprland-nix-wrapped.enable (lib.mkForce config.hyprland-nix-wrapped.package);
         };
       };
       
-      homeModules.default = { pkgs, lib, ... }: {
+      homeModules.default = { pkgs, lib, config, ... }: {
         imports = [ ./module.nix ];
         config = lib.mkIf pkgs.stdenv.isLinux {
           hyprland-nix-wrapped.upstreamPackage = lib.mkDefault inputs.nixpkgs.legacyPackages.${pkgs.system}.hyprland;
+          wayland.windowManager.hyprland.package = lib.mkIf config.hyprland-nix-wrapped.enable (lib.mkForce config.hyprland-nix-wrapped.package);
         };
       };
 
