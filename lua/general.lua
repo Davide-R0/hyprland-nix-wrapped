@@ -75,12 +75,12 @@ hl.env("SSH_AUTH_SOCK", "$XDG_RUNTIME_DIR/gcr/ssh")
 -- Autostart
 hl.on("hyprland.start", function()
     -- Check if we are running nested (inside another Wayland/X11 session)
-    local is_nested = os.getenv("WAYLAND_DISPLAY") ~= nil or os.getenv("DISPLAY") ~= nil
+    -- local is_nested = os.getenv("WAYLAND_DISPLAY") ~= nil or os.getenv("DISPLAY") ~= nil
 
-    if is_nested then
-        print("[Hyprland] Nested session detected. Skipping autostart to protect host.")
-        return
-    end
+    -- if is_nested then
+    --     print("[Hyprland] Nested session detected. Skipping autostart to protect host.")
+    --     return
+    -- end
 
     -- Environment setup (Only for main session)
     local dbus_pkg = NIX.pkgs["dbus"]
