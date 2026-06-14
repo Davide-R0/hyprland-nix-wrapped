@@ -161,9 +161,8 @@
             cat <<EOF > $out/bin/Hyprland
             #!/usr/bin/env bash
             
-            echo "Hyprland called with args: \$@" >> /tmp/hypr-args.txt
-            
-            if [[ " \$@ " =~ " --version " ]] || [[ " \$@ " =~ " -i " ]] || [[ " \$@ " =~ " --systeminfo " ]] || [[ " \$@ " =~ " --help " ]]; then
+            # Se è start-hyprland a chiamare per chiedere la versione o le info di sistema, bypassiamo il config
+            if [[ " \$@ " =~ " --version" ]] || [[ " \$@ " =~ " -i " ]]; then
                 exec -a "\$0" "$out/bin/.Hyprland-wrapped" "\$@"
             else
                 exec -a "\$0" "$out/bin/.Hyprland-wrapped" -c "${entrypointLua}" "\$@"

@@ -91,7 +91,7 @@ hl.on("hyprland.start", function()
 
     --hl.exec_cmd("systemctl --user stop hyprland-session.target")
     hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
-    hl.exec_cmd("systemctl --user start hyprland-session.target")
+    hl.exec_cmd("systemctl --user start hyprland-session.target || systemctl --user start graphical-session.target")
 
     -- Execute commands from Nix extraExecOnce option
     if NIX.extraExecOnce and #NIX.extraExecOnce > 0 then
