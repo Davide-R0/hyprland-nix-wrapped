@@ -72,57 +72,61 @@
         in
         {
           default = pkgs.mkShell {
-            buildInputs = with pkgs; [ entr ];
-            shellHook = ''
-              echo "--- Hyprland Lua DevShell ---"
-              echo "Use 'hypr-watch' to start Hyprland with live-reload on Lua changes."
-              echo ""
-              hypr-watch() {
-                local PROJECT_ROOT=$(pwd)
-                
-                # 1. Generiamo un nix-env.lua locale per il dev
-                cat <<EOF > nix-env.lua
-                  local NIX = {
-                    terminal = "alacritty",
-                    browser = "firefox",
-                    dmsPath = "dms",
-                    extraWindowRule = true,
-                    displayScale = "1",
-                    monitors = { ", preferred, auto, 1" },
-                    workspaces = {},
-                    extraBind = {},
-                    extraExecOnce = {},
-                    extraInit = "",
-                    pkgs = {},
-                    plugins = {},
-                    configModules = { "general", "keybinds", "monitors", "plugins", "rules" }
-                  }
-                  return NIX
-                EOF
+            buildInputs = with pkgs; [
+              entr
+              uv
+              python314
+            ];
+            #shellHook = ''
+            #  echo "--- Hyprland Lua DevShell ---"
+            #  echo "Use 'hypr-watch' to start Hyprland with live-reload on Lua changes."
+            #  echo ""
+            #  hypr-watch() {
+            #    local PROJECT_ROOT=$(pwd)
+            #
+            #    # 1. Generiamo un nix-env.lua locale per il dev
+            #    cat <<EOF > nix-env.lua
+            #      local NIX = {
+            #        terminal = "alacritty",
+            #        browser = "firefox",
+            #        dmsPath = "dms",
+            #        extraWindowRule = true,
+            #        displayScale = "1",
+            #        monitors = { ", preferred, auto, 1" },
+            #        workspaces = {},
+            #        extraBind = {},
+            #        extraExecOnce = {},
+            #        extraInit = "",
+            #        pkgs = {},
+            #        plugins = {},
+            #        configModules = { "general", "keybinds", "monitors", "plugins", "rules" }
+            #      }
+            #      return NIX
+            #    EOF
 
-                # 2. Entrypoint locale con path ASSOLUTI
-                cat <<EOF > .dev-entrypoint.lua
-                  -- Aggiungiamo la root e la cartella lua/ per i moduli
-                  package.path = "$PROJECT_ROOT/?.lua;$PROJECT_ROOT/lua/?.lua;" .. package.path
-                  require("init")
-                EOF
+            #    # 2. Entrypoint locale con path ASSOLUTI
+            #    cat <<EOF > .dev-entrypoint.lua
+            #      -- Aggiungiamo la root e la cartella lua/ per i moduli
+            #      package.path = "$PROJECT_ROOT/?.lua;$PROJECT_ROOT/lua/?.lua;" .. package.path
+            #      require("init")
+            #    EOF
 
-                echo "Avvio Hyprland (Nestato)..."
-                
-                # Usiamo variabili d'ambiente per forzare un'istanza separata
-                # Nota: Rimosse le backslash da $PROJECT_ROOT per permettere l'espansione corretta
-                HYPRLAND_INSTANCE_SIGNATURE="nested-$RANDOM" \
-                ${hyprland-wrapped}/bin/Hyprland -c "$PROJECT_ROOT/.dev-entrypoint.lua" &
-                HYPR_PID=$!
-                
-                sleep 2
-                echo "Watching for changes in $PROJECT_ROOT..."
-                find . -name "*.lua" | entr hyprctl reload
-                
-                kill $HYPR_PID
-                rm .dev-entrypoint.lua nix-env.lua
-              }
-            '';
+            #    echo "Avvio Hyprland (Nestato)..."
+            #
+            #    # Usiamo variabili d'ambiente per forzare un'istanza separata
+            #    # Nota: Rimosse le backslash da $PROJECT_ROOT per permettere l'espansione corretta
+            #    HYPRLAND_INSTANCE_SIGNATURE="nested-$RANDOM" \
+            #    ${hyprland-wrapped}/bin/Hyprland -c "$PROJECT_ROOT/.dev-entrypoint.lua" &
+            #    HYPR_PID=$!
+            #
+            #    sleep 2
+            #    echo "Watching for changes in $PROJECT_ROOT..."
+            #    find . -name "*.lua" | entr hyprctl reload
+            #
+            #    kill $HYPR_PID
+            #    rm .dev-entrypoint.lua nix-env.lua
+            #  }
+            #'';
           };
         }
       );
