@@ -72,6 +72,11 @@
       default = "";
       description = "Comandi extra da eseguire all'avvio (es. dms run)";
     };
+    upstreamPackage = lib.mkOption {
+      type = lib.types.package;
+      default = pkgs.hyprland;
+      description = "Il pacchetto originale di Hyprland da wrappare.";
+    };
     package = lib.mkOption {
       type = lib.types.package;
       readOnly = true;
@@ -147,7 +152,7 @@
       wrappedPackage =
         (pkgs.symlinkJoin {
           name = "hyprland-nix-wrapped";
-          paths = [ pkgs.hyprland ] ++ cfg.extraPackages;
+          paths = [ cfg.upstreamPackage ] ++ cfg.extraPackages;
           buildInputs = [ pkgs.makeWrapper ];
           postBuild = ''
             wrapProgram $out/bin/Hyprland \
@@ -155,7 +160,10 @@
           '';
         }).overrideAttrs
           (old: {
-            meta = (old.meta or { }) // {
+            passthru = (cfg.upstreamPackage.passthru or {}) // {
+              providedSessions = [ "hyprland" ];
+            };
+            meta = (cfg.upstreamPackage.meta or { }) // {
               mainProgram = "Hyprland";
             };
           });

@@ -61,8 +61,19 @@
         }
       );
 
-      nixosModules.default = ./module.nix;
-      homeModules.default = ./module.nix;
+      nixosModules.default = { pkgs, lib, ... }: {
+        imports = [ ./module.nix ];
+        config = lib.mkIf pkgs.stdenv.isLinux {
+          hyprland-nix-wrapped.upstreamPackage = lib.mkDefault inputs.nixpkgs.legacyPackages.${pkgs.system}.hyprland;
+        };
+      };
+      
+      homeModules.default = { pkgs, lib, ... }: {
+        imports = [ ./module.nix ];
+        config = lib.mkIf pkgs.stdenv.isLinux {
+          hyprland-nix-wrapped.upstreamPackage = lib.mkDefault inputs.nixpkgs.legacyPackages.${pkgs.system}.hyprland;
+        };
+      };
 
       devShells = forAllSystems (
         system:
