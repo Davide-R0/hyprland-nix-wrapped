@@ -166,37 +166,28 @@
           hyprland-nix-wrapped.package = wrappedPackage;
         }
 
-        # Integrazione NixOS (Solo se siamo in ambiente NixOS)
-        (lib.mkIf (options ? environment && options ? programs.hyprland) {
-          programs.hyprland = {
-            enable = lib.mkDefault true;
-            package = lib.mkForce wrappedPackage;
-          };
-          environment.systemPackages = lib.mkIf (!config.programs.hyprland.enable) [
-            wrappedPackage
-          ];
-        })
+        # Integrazione NixOS
+        # Usiamo options ? system.stateVersion per essere certi di essere in NixOS
+        # E verifichiamo che NON siamo dentro una valutazione Home Manager (che non ha environment)
+        (lib.mkIf (options ? environment.systemPackages && options ? system.stateVersion && !(options ? home.stateVersion)) (lib.mkMerge [
+          {
+            environment.systemPackages = [ wrappedPackage ];
+          }
+          (lib.mkIf (options ? programs.hyprland.package) {
+            programs.hyprland.package = lib.mkForce wrappedPackage;
+          })
+        ]))
 
-        # Integrazione Home Manager (Solo se siamo in ambiente Home Manager)
-        (lib.mkIf (options ? home && options ? wayland.windowManager.hyprland) {
-          wayland.windowManager.hyprland = {
-            enable = lib.mkDefault true;
-            package = lib.mkForce wrappedPackage;
-          };
-          home.packages = lib.mkIf (!config.wayland.windowManager.hyprland.enable) [
-            wrappedPackage
-          ];
-        })
-
-        # Caso limite: Se siamo in HM ma NON c'è il modulo Hyprland di HM (raro)
-        (lib.mkIf (options ? home && !(options ? wayland.windowManager.hyprland)) {
-          home.packages = [ wrappedPackage ];
-        })
-
-        # Caso limite: Se siamo in NixOS ma NON c'è il modulo Hyprland di NixOS (raro)
-        (lib.mkIf (options ? environment && !(options ? programs.hyprland)) {
-          environment.systemPackages = [ wrappedPackage ];
-        })
+        # Integrazione Home Manager
+        # Usiamo options ? home.stateVersion per essere certi di essere in Home Manager
+        (lib.mkIf (options ? home.packages && options ? home.stateVersion) (lib.mkMerge [
+          {
+            home.packages = [ wrappedPackage ];
+          }
+          (lib.mkIf (options ? wayland.windowManager.hyprland.package) {
+            wayland.windowManager.hyprland.package = lib.mkForce wrappedPackage;
+          })
+        ]))
       ]
     );
 }
