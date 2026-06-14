@@ -167,27 +167,18 @@
         }
 
         # Integrazione NixOS
-        # Usiamo options ? system.stateVersion per essere certi di essere in NixOS
-        # E verifichiamo che NON siamo dentro una valutazione Home Manager (che non ha environment)
-        (lib.mkIf (options ? environment.systemPackages && options ? system.stateVersion && !(options ? home.stateVersion)) (lib.mkMerge [
-          {
-            environment.systemPackages = [ wrappedPackage ];
-          }
-          (lib.mkIf (options ? programs.hyprland.package) {
-            programs.hyprland.package = lib.mkForce wrappedPackage;
-          })
-        ]))
+        # Usiamo optionalAttrs per nascondere completamente la chiave 'environment' a Home Manager
+        (lib.optionalAttrs (options ? environment && !(options ? home.file)) {
+          environment.systemPackages = [ wrappedPackage ];
+          programs.hyprland.package = lib.mkForce wrappedPackage;
+        })
 
         # Integrazione Home Manager
-        # Usiamo options ? home.stateVersion per essere certi di essere in Home Manager
-        (lib.mkIf (options ? home.packages && options ? home.stateVersion) (lib.mkMerge [
-          {
-            home.packages = [ wrappedPackage ];
-          }
-          (lib.mkIf (options ? wayland.windowManager.hyprland.package) {
-            wayland.windowManager.hyprland.package = lib.mkForce wrappedPackage;
-          })
-        ]))
+        # Usiamo optionalAttrs per nascondere 'home' e 'wayland' a NixOS
+        (lib.optionalAttrs (options ? home.file) {
+          home.packages = [ wrappedPackage ];
+          wayland.windowManager.hyprland.package = lib.mkForce wrappedPackage;
+        })
       ]
     );
 }
