@@ -1,4 +1,4 @@
 # Lua LSP configuraiton file
 std = "hl"
 [config]
-globals = ["hyprl", "require", "hl"]
+globals = ["hl", "require"]
