@@ -1,131 +1,108 @@
-# Hyprland lua config wrapped into nix
+# Hyprland Module Template
 
-## Avviarlo nativamente
-
-Aggiungere alla config nix o conf di hyprland questi comandi:
-
-```conf
-# -----------------------------------------------
-# PASSTHROUGH SUBMAP (per testare VM o Nested Wayland)
-# -----------------------------------------------
-# Attiva la modalità passthrough con CTRL + ALT + G (stile QEMU)
-bind = CTRL ALT, G, submap, passthru
-# Entriamo nella submap. Qui DENTRO, l'unica scorciatoia
-# riconosciuta dal sistema principale sarà quella per uscirne.
-submap = passthru
-# Premi di nuovo CTRL + ALT + G per sbloccare il sistema principale
-bind = CTRL ALT, G, submap, reset
-submap = reset
-```
-
-nella config di nix aggiungerli al `wayland.windowManager.hyprland.extraConfig`,
-ementre se si ha hyprland.conf metterli semplicemnte li dentro.
-
-a questo punto si può avivare:
+Per verificare la configurazione di hyprland:
 
 ```bash
-nix run .#hyprland
+nix run . -- --verify-config
 ```
 
-quando si è con il cursore dentro a quella finestra premere `Ctrl + Alt + G` per
-fare in modo che essa catturi i tasti premuti (altrimenti li catutra il tuo os
-di base) e testare quello che si vuole.
+---
 
-poi quanod is ha finito rimuovere la cattura premendo nuovamente
-`Ctrl + Alt + G` e chiudere la finestra.
+This is a demonstration of how to configure [Hyprland](https://hyprland.org/)
+using `nix-wrapper-modules`.
 
-## Come usarlo in NixOS / Home Manager
+This template specifically leverages Hyprland's recent migration to support Lua
+configuration (v0.55.0+), demonstrating how to inject Nix values dynamically
+into a pure Lua configuration file.
 
-Grazie al modulo integrato, non è più necessario aggiungere manualmente il
-pacchetto alla lista dei pacchetti installati. Basta abilitare il modulo.
+## File Structure
 
-### 1. Aggiungere l'input al Flake principale
+- `flake.nix`: The entry point that defines inputs and outputs.
+- `module.nix`: The Nix module where you define custom options, pass them to
+  `luaInfo`, and specify the path to your Lua entrypoint.
+- `lua/init.lua`: Your pure Lua Hyprland configuration. It pulls in the Nix
+  values dynamically using `require('nix-info')`.
 
-```nix
-inputs.hyprland-nix-wrapped = {
-  url = "github:Davide-Ro/hyprland-nix-wrapped";
-  inputs.nixpkgs.follows = "nixpkgs";
-};
+## Usage
+
+To initialize this template flake into an empty directory, run:
+
+```bash
+nix flake init -t github:BirdeeHub/nix-wrapper-modules#hyprland
 ```
 
-### 2. Importare e configurare il modulo
+To build and run it from this directory:
 
-Puoi usare questo modulo sia direttamente in **NixOS** che tramite **Home
-Manager**.
-
-#### In Home Manager
-
-```nix
-# imports = [ inputs.hyprland-nix-wrapped.homeManagerModules.default ];
-
-hyprland-nix-wrapped = {
-  enable = true; # Attiva il modulo e installa automaticamente il pacchetto
-
-  terminal = "${pkgs.alacritty}/bin/alacritty";
-  browser = "${pkgs.brave}/bin/brave";
-
-  # Opzioni custom
-  displayScale = "1.2";
-
-  plugins = with pkgs; [
-    hyprlandPlugins.hyprbars
-  ];
-
-  # Pacchetti extra inclusi nel wrapper (es. wofi, waybar, ecc...)
-  extraPackages = with pkgs; [
-    wofi
-    grim
-    slurp
-  ];
-};
+```bash
+nix build .
+./result/bin/Hyprland
 ```
 
-#### In NixOS (System wide)
+## Abilitazione NixOS vs Home Manager
+
+Per usare questa versione _wrapped_ di Hyprland (con config Lua iniettata) sul
+tuo sistema, segui questa strategia:
+
+### 1. NixOS (Sistema)
+
+In NixOS, l'opzione `programs.hyprland.enable = true` è necessaria per
+configurare permessi, Portals e PAM. Devi però puntare il pacchetto alla tua
+versione wrappata:
 
 ```nix
-# imports = [ inputs.hyprland-nix-wrapped.nixosModules.default ];
-
-hyprland-nix-wrapped = {
+# In configuration.nix o nel tuo flake di sistema
+programs.hyprland = {
   enable = true;
-  # ... stessa configurazione sopra ...
+  # Usa il pacchetto generato da questo template
+  package = inputs.tuo-flake-hyprland.packages.${system}.hyprland;
 };
 ```
 
-#### Esempio di configurazione completa (stile vecchia config)
+### 2. Home Manager (Utente)
+
+In Home Manager puoi importare il modulo fornito da questo template per gestire
+le opzioni personalizzate (come `myConfig.gaps_in`):
 
 ```nix
-hyprland-nix-wrapped = {
-  enable = true;
+# Nel tuo file di configurazione Home Manager
+imports = [
+  inputs.tuo-flake-hyprland.homeModules.hyprland
+];
 
-  # Configurazione monitor
-  monitors = [
-    "HDMI-A-1, 3440x1440@100.00, auto, 1.25"
-  ];
+# Ora puoi configurare le tue opzioni Nix personalizzate
+wrappers.hyprland.gaps_in = 10;
+wrappers.hyprland.terminal = "foot";
+```
 
-  # Workspace persistenti o configurazioni specifiche
-  workspaces = [
-    "1, persistent:true"
-    "2, persistent:true"
-  ];
+## Gestione dei Plugin
 
-  # Comandi eseguiti una sola volta all'avvio
-  extraExecOnce = [
-    "sleep 5 && dms ipc call plugins disable compactNetSpeedV8"
-  ];
+I plugin di Hyprland (file `.so`) possono essere integrati nel wrapper in due
+step:
 
-  # Keybindings extra in formato Hyprland
-  extraBind = [
-    "$mod, X, exec, echo 'Hello World'"
-  ];
+### 1. In Nix (`module.nix`)
 
-  extraWindowRule = false;
-  
-  # Altre opzioni...
-  terminal = "${pkgs.alacritty}/bin/alacritty";
-  browser = "${pkgs.brave}/bin/brave";
+Passa il percorso del plugin a Lua tramite `luaInfo`. Assicurati che il plugin
+sia compilato per la stessa versione di Hyprland.
+
+```nix
+config.luaInfo = {
+  plugins = {
+    hyprspace = "${pkgs.hyprlandPlugins.hyprspace}/lib/libhyprspace.so";
+  };
 };
 ```
 
-Il modulo si occuperà di creare il pacchetto Hyprland wrappato con la tua
-configurazione Lua e di aggiungerlo automaticamente a `home.packages` (se usato
-in Home Manager) o `environment.systemPackages` (se usato in NixOS).
+### 2. In Lua (`init.lua`)
+
+Recupera il percorso e carica il plugin (ad esempio usando `hyprctl` tramite
+`exec_once` se non esiste ancora un'API Lua dedicata):
+
+```lua
+local nixInfo = require('nix-info')
+local hyprspace_path = nixInfo(nil, "plugins", "hyprspace")
+
+if hyprspace_path then
+    -- Caricamento tramite hyprctl (metodo standard)
+    hypr.exec_once("hyprctl plugin load " .. hyprspace_path)
+end
+```

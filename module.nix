@@ -2,191 +2,65 @@
   config,
   lib,
   pkgs,
-  options,
   ...
 }:
 {
-  options.hyprland-nix-wrapped = {
-    enable = lib.mkEnableOption "Hyprland Nix Wrapped";
+  # NOTE: quando i moduli saranno integrati nella libreria Nix-wrapper-modules: `wlib.wrapperModules.hyprland`
+  imports = [ ./wrapperModules/module.nix ];
+
+  options.settings = {
     terminal = lib.mkOption {
       type = lib.types.str;
-      default = "${pkgs.ghostty}/bin/ghostty";
+      default = "kitty";
+      description = "Default terminal emulator";
     };
-    browser = lib.mkOption {
+    launcher = lib.mkOption {
       type = lib.types.str;
-      default = "${pkgs.firefox}/bin/firefox";
+      default = "rofi -show drun";
+      description = "Default application launcher";
     };
-    dmsPath = lib.mkOption {
+    mod_key = lib.mkOption {
       type = lib.types.str;
-      default = "dms";
-      description = "Path per l'eseguibile dms";
+      default = "SUPER";
+      description = "The main modifier key";
     };
-    enableHyprbars = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Abilita il plugin hyprbars";
+    gaps_in = lib.mkOption {
+      type = lib.types.int;
+      default = 5;
+      description = "Inner gaps";
     };
-    extraWindowRule = lib.mkOption {
-      type = lib.types.bool;
-      default = true;
-      description = "Abilita le regole extra delle finestre";
+    gaps_out = lib.mkOption {
+      type = lib.types.int;
+      default = 20;
+      description = "Outer gaps";
     };
-    plugins = lib.mkOption {
-      type = lib.types.listOf lib.types.package;
-      default = [ ];
-    };
-    extraPackages = lib.mkOption {
-      type = lib.types.listOf lib.types.package;
-      default = [
-        pkgs.ghostty
-        pkgs.dbus
-      ];
-    };
-    displayScale = lib.mkOption {
+    active_border_color = lib.mkOption {
       type = lib.types.str;
-      default = "1";
-      description = "Fattore di scaling globale del monitor (es. 1, 1.5, 2)";
-    };
-    monitors = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ", preferred, auto, 1" ];
-      description = "Lista di monitor da configurare.";
-    };
-    workspaces = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = "Lista di workspace da configurare.";
-    };
-    extraBind = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = "Lista di keybindings extra (formato stringa hyprland).";
-    };
-    extraExecOnce = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
-      default = [ ];
-      description = "Lista di comandi da eseguire all'avvio (in aggiunta a quelli base).";
-    };
-    extraInit = lib.mkOption {
-      type = lib.types.lines;
-      default = "";
-      description = "Comandi extra da eseguire all'avvio (es. dms run)";
-    };
-    upstreamPackage = lib.mkOption {
-      type = lib.types.package;
-      default = pkgs.hyprland;
-      description = "Il pacchetto originale di Hyprland da wrappare.";
-    };
-    package = lib.mkOption {
-      type = lib.types.package;
-      readOnly = true;
+      default = "rgba(33ccffee)";
+      description = "Color of the active border";
     };
   };
 
-  config =
-    let
-      cfg = config.hyprland-nix-wrapped;
-      baseDir = ./.;
-
-      configFiles = builtins.attrNames (builtins.readDir ./lua);
-      luaModules = builtins.filter (lib.hasSuffix ".lua") configFiles;
-      moduleNames = map (lib.removeSuffix ".lua") luaModules;
-      luaConfigDir = ./lua;
-
-      nixEnvDir = pkgs.writeTextDir "nix-env.lua" ''
-        local NIX = {
-          terminal = "${cfg.terminal}",
-          browser = "${cfg.browser}",
-          dmsPath = "${cfg.dmsPath}",
-          enableHyprbars = ${if cfg.enableHyprbars then "true" else "false"},
-          extraWindowRule = ${if cfg.extraWindowRule then "true" else "false"},
-          displayScale = "${cfg.displayScale}",
-          monitors = {
-            ${lib.concatMapStringsSep ",\n            " (m: "'${m}'") cfg.monitors}
-          },
-          workspaces = {
-            ${lib.concatMapStringsSep ",\n            " (w: "'${w}'") cfg.workspaces}
-          },
-          extraBind = {
-            ${lib.concatMapStringsSep ",\n            " (b: "'${b}'") cfg.extraBind}
-          },
-          extraExecOnce = {
-            ${lib.concatMapStringsSep ",\n            " (e: "'${e}'") cfg.extraExecOnce}
-          },
-          extraInit = [[
-            ${cfg.extraInit}
-          ]],
-
-          pkgs = {
-            ${lib.concatMapStringsSep ",\n            " (
-              p: "[\"${if p ? pname then p.pname else "unknown"}\"] = '${p}'"
-            ) cfg.extraPackages}
-          },
-          
-          plugins = {
-            ${lib.concatMapStringsSep ",\n            " (
-              p: "'${p}/lib/hyprland/lib${if p ? pname then p.pname else "unknown"}.so'"
-            ) cfg.plugins}
-          },
-          
-          configModules = {
-            ${lib.concatMapStringsSep ",\n            " (m: "'${m}'") moduleNames}
-          }
-        }
-        return NIX
-      '';
-
-      entrypointLua = pkgs.writeText "hyprland-entrypoint.lua" ''
-        -- Setup path
-        package.path = "${nixEnvDir}/?.lua;" .. package.path
-        package.path = "${baseDir}/?.lua;" .. package.path
-        package.path = "${luaConfigDir}/?.lua;" .. package.path
-
-        -- Caricamento
-        local ok, err = pcall(require, "init")
-        if not ok then
-            print("[Hyprland-Lua] ERRORE CRITICO: Impossibile caricare init.lua: " .. err)
-        end
-      '';
-
-      makeWrappedPackage = upstream:
-        (pkgs.symlinkJoin {
-          name = "hyprland-nix-wrapped-${upstream.version or "0.55.2"}";
-          pname = "hyprland-nix-wrapped";
-          version = upstream.version or "0.55.2";
-          paths = [ upstream ] ++ cfg.extraPackages;
-          buildInputs = [ pkgs.makeWrapper ];
-          postBuild = ''
-            mv $out/bin/Hyprland $out/bin/.Hyprland-wrapped
-            cat <<EOF > $out/bin/Hyprland
-            #!/usr/bin/env bash
-            
-            # Se è start-hyprland a chiamare per chiedere la versione o le info di sistema, bypassiamo il config
-            if [[ " \$@ " =~ " --version" ]] || [[ " \$@ " =~ " -i " ]]; then
-                exec -a "\$0" "$out/bin/.Hyprland-wrapped" "\$@"
-            else
-                exec -a "\$0" "$out/bin/.Hyprland-wrapped" -c "${entrypointLua}" "\$@"
-            fi
-            EOF
-            chmod +x $out/bin/Hyprland
-          '';
-        }).overrideAttrs
-          (old: {
-            passthru = (upstream.passthru or {}) // {
-              providedSessions = [ "hyprland" ];
-            };
-            meta = builtins.removeAttrs (upstream.meta or { }) ["outputsToInstall"] // {
-              mainProgram = "Hyprland";
-            };
-          });
-
-      wrappedPackage = let
-        base = makeWrappedPackage cfg.upstreamPackage;
-      in base // {
-        override = args: makeWrappedPackage (cfg.upstreamPackage.override args);
+  config = {
+    luaInfo = {
+      terminal = config.settings.terminal;
+      launcher = config.settings.launcher;
+      mod = config.settings.mod_key;
+      gaps = {
+        i = config.settings.gaps_in;
+        o = config.settings.gaps_out;
       };
-    in
-    lib.mkIf cfg.enable {
-      hyprland-nix-wrapped.package = wrappedPackage;
+      colors = {
+        active_border = config.settings.active_border_color;
+      };
+      lua_dir = "${./lua}";
     };
+
+    "hyprland.lua".path = ./init.lua;
+    runtimePkgs = [
+      pkgs.kitty
+      pkgs.rofi
+      pkgs.waybar
+    ];
+  };
 }

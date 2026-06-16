@@ -1,4 +1,4 @@
 # Lua LSP configuraiton file
 std = "hl"
 [config]
-globals = ["vim", "require", "hl"]
+globals = ["hyprl", "require", "hl"]
