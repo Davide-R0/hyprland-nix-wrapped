@@ -1,5 +1,6 @@
 {
   description = "Flake exporting a configured hyprland package with Lua config";
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     wrappers = {
@@ -25,9 +26,10 @@
       systems = nixpkgs.lib.platforms.all;
 
       perSystem =
-        { config, ... }:
+        { config, pkgs, ... }:
         {
           packages.default = config.packages.hyprland;
+          checks.default = import ./wrapperModules/check.nix { inherit pkgs self; }; # NOTE: per fare i checks
         };
 
       flake = {

@@ -4,6 +4,7 @@ Per verificare la configurazione di hyprland:
 
 ```bash
 nix run . -- --verify-config
+nix flake check -v
 ```
 
 ---

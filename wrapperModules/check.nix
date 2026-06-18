@@ -11,6 +11,7 @@ let
     }).wrapper;
 in
 pkgs.runCommand "hyprland-test" { } ''
+  export XDG_RUNTIME_DIR=$TMPDIR
   # Hyprland --help returns exit code 0 if successful
   ${wrapped}/bin/Hyprland --help > /dev/null
   touch $out

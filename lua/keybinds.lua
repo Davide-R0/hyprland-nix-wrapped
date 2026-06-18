@@ -62,6 +62,8 @@ function M.apply(nixInfo)
     hl.bind(mod .. " + SHIFT + L", hl.dsp.window.move({ direction = "right" }))
     hl.bind(mod .. " + SHIFT + K", hl.dsp.window.move({ direction = "up" }))
     hl.bind(mod .. " + SHIFT + J", hl.dsp.window.move({ direction = "down" }))
+    hl.bind("ALT + mouse:272", hl.dsp.window.drag(), { mouse = true })   -- ALT + LMB: Move a window
+    hl.bind("ALT + mouse:273", hl.dsp.window.resize(), { mouse = true }) -- ALT + RMB: Resize a window
 
     ---- Gestione Monitor
     --hl.bind(mod .. " + CTRL + left", hl.dsp.focusmonitor("l"))
@@ -138,6 +140,28 @@ function M.apply(nixInfo)
     hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
     hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
     hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("playerctl previous"), { locked = true })
+
+    -- -----------------------------------------------
+    -- PASSTHROUGH SUBMAP (per testare VM o Nested Wayland)
+    -- -----------------------------------------------
+    -- Attiva la modalità passthrough con CTRL + ALT + G
+    hl.bind("CTRL + ALT + G", hl.dsp.submap("passthru"))
+    -- Il binding per uscirne DEVE essere eseguito solo all'interno della submap "passthru"
+    -- La maggior parte dei wrapper Lua per Hyprland supporta l'opzione "submap" nella tabella finale
+    hl.bind("CTRL + ALT + G", hl.dsp.submap("reset"), { submap = "passthru" })
+
+    -- Inseriamo gli extraBind passati da Nix.
+    -- Presumendo che i bind extra siano in formato raw di Hyprland (es. "SUPER, Q, exec, kitty"),
+    -- possiamo usare hl.config per aggiungerli direttamente.
+    local extra_binds = nixInfo({}, "extraBind")
+    if #extra_binds > 0 then
+        hl.config({ bind = extra_binds })
+    end
+
+    local extra_bindels = nixInfo({}, "extraBindel")
+    if #extra_bindels > 0 then
+        hl.config({ bindel = extra_bindels })
+    end
 end
 
 return M

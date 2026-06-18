@@ -60,24 +60,22 @@ function M.apply(nixInfo)
             --},
         },
 
-        --source = "./dms/colors.conf", -- TODO:
-        --monitor = cfg.monitors, -- TODO: settarlo con nix
-        monitor = {
-            ",preferred,auto,1",
-        },
+        --source = "./dms/colors.conf", -- TODO: settarlo da nix?
+        monitor = nixInfo({ ",preferred,auto,1" }, "monitors"),
         workspace = nixInfo({}, "workspaces"),
-        -- TODO: agiugnerle con nix
-        exec_once = {
-            --"ghostty --class=ghostty-prewarm",
-            "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
-            "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
-            "systemctl --user start hyprland-session.target",
-            --#"${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1",
-        },
-        --++ cfg.extraExecOnce;
+        exec_once = (function()
+            local cmds = {
+                "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
+                "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
+                "systemctl --user start hyprland-session.target",
+            }
+            for _, cmd in ipairs(nixInfo({}, "extraExecOnce")) do
+                table.insert(cmds, cmd)
+            end
+            return cmds
+        end)(),
+
         env = { "SSH_AUTH_SOCK,$XDG_RUNTIME_DIR/gcr/ssh" },
-
-
 
         xwayland = {
             force_zero_scaling = true,
@@ -86,7 +84,6 @@ function M.apply(nixInfo)
             mfact = 0.5, -- ???
             --new_status = "master", -- nella doc ufficiale c'è questo...
         },
-
 
         windowrule = {
             "no_anim class:^(org.quickshell)$",
@@ -115,18 +112,15 @@ function M.apply(nixInfo)
             kb_layout          = "it",
             kb_variant         = "",
             kb_model           = "",
-            kb_options         = "",
             kb_rules           = "",
             --follow_mouse = 1, -- ???
-            -- TODO:
-            --kb_options = lib.concatStringsSep "," (
-            --  [
-            --    "caps:escape"
-            --    "shift:both_capslock"
-            --  ]
-            --  ++ cfg.extraKbOptions
-            --);
-            --#kb_options = "caps:escape,shift:both_capslock"; # numpad:mac
+            kb_options         = (function()
+                local opts = { "caps:escape", "shift:both_capslock" }
+                for _, opt in ipairs(nixInfo({}, "extraKbOptions")) do
+                    table.insert(opts, opt)
+                end
+                return table.concat(opts, ",")
+            end)(),
             numlock_by_default = true,
             sensitivity        = 0,
             touchpad           = {
