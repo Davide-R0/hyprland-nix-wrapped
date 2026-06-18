@@ -58,10 +58,10 @@ function M.apply(nixInfo)
     hl.bind(mod .. " + J", hl.dsp.focus({ direction = "down" }))
 
     ---- Spostamento Finestre
-    --hl.bind(mod .. " + SHIFT + H", hl.dsp.movewindow("l"))
-    --hl.bind(mod .. " + SHIFT + L", hl.dsp.movewindow("r"))
-    --hl.bind(mod .. " + SHIFT + K", hl.dsp.movewindow("u"))
-    --hl.bind(mod .. " + SHIFT + J", hl.dsp.movewindow("d"))
+    hl.bind(mod .. " + SHIFT + H", hl.dsp.window.move({ direction = "left" }))
+    hl.bind(mod .. " + SHIFT + L", hl.dsp.window.move({ direction = "right" }))
+    hl.bind(mod .. " + SHIFT + K", hl.dsp.window.move({ direction = "up" }))
+    hl.bind(mod .. " + SHIFT + J", hl.dsp.window.move({ direction = "down" }))
 
     ---- Gestione Monitor
     --hl.bind(mod .. " + CTRL + left", hl.dsp.focusmonitor("l"))
