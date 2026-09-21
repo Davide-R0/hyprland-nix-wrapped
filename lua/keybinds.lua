@@ -17,10 +17,10 @@ function M.apply(nixInfo)
     hl.bind(mod .. " + V", hl.dsp.exec_cmd("dms ipc call clipboard toggle"))
     hl.bind(mod .. " + comma", hl.dsp.exec_cmd("dms ipc call settings focusOrToggle"))
     hl.bind(mod .. " + N", hl.dsp.exec_cmd("dms ipc call notifications toggle"))
-    hl.bind(mod .. " + TAB", hl.dsp.exec_cmd("dms ipc call hl toggleOverview"))
+    hl.bind(mod .. " + TAB", hl.dsp.exec_cmd("dms ipc call hypr toggleOverview"))
     hl.bind(mod .. " + M", hl.dsp.exec_cmd("dms ipc call widget toggle music"))
 
-    hl.bind("SUPER + K", hl.dsp.exec_cmd("dms ipc call keybinds toggle hlland"))
+    hl.bind("SUPER + K", hl.dsp.exec_cmd("dms ipc call keybinds toggle hyprland"))
     hl.bind(mod .. " + SHIFT + M", hl.dsp.exec_cmd("dms ipc call processlist focusOrToggle"))
     hl.bind(mod .. " + SHIFT + P", hl.dsp.exec_cmd("dms ipc call powermenu toggle"))
     hl.bind(mod .. " + SHIFT + N", hl.dsp.exec_cmd("dms ipc call night toggle"))
@@ -29,7 +29,7 @@ function M.apply(nixInfo)
     -- Operazioni di Sistema Hyprland
     hl.bind(mod .. " + SHIFT + E", hl.dsp.exit())
     hl.bind(mod .. " + SHIFT + O", hl.dsp.dpms("toggle"))
-    hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("hlctl reload"))
+    hl.bind(mod .. " + SHIFT + R", hl.dsp.exec_cmd("hyprctl reload"))
 
     -- Toggle e UI
     --hl.bind(mod .. " + E", hl.dsp.exec_cmd(NIX.toggleNetSpeed))
@@ -41,27 +41,35 @@ function M.apply(nixInfo)
     --hl.bind(mod .. " + F", hl.dsp.fullscreen("0"))
     hl.bind(mod .. " + SHIFT + F",
         hl.dsp.exec_cmd(
-            'hlctl --batch "dispatch togglefloating; dispatch resizeactive exact 40% 40%; dispatch moveactive exact 59% 58%"'))
+            'hyprctl --batch "dispatch togglefloating; dispatch resizeactive exact 40% 40%; dispatch moveactive exact 59% 58%"'))
     --hl.bind(mod .. " + T", hl.dsp.layoutmsg("togglesplit"))
     --hl.bind(mod .. " + P", hl.dsp.pin())
-    hl.bind(mod .. " + O", hl.dsp.exec_cmd("hlctl setprop active opaque toggle"))
+    hl.bind(mod .. " + O", hl.dsp.exec_cmd("hyprctl setprop active opaque toggle"))
 
     -- Screenshot
     hl.bind("Print", hl.dsp.exec_cmd("dms screenshot"))
     hl.bind("CTRL + Print", hl.dsp.exec_cmd("dms screenshot full"))
     hl.bind("ALT + Print", hl.dsp.exec_cmd("dms screenshot window"))
 
-    -- Spostamento Focus
+    -- Spostamento Focus (hjkl + frecce)
     hl.bind(mod .. " + H", hl.dsp.focus({ direction = "left" }))
     hl.bind(mod .. " + L", hl.dsp.focus({ direction = "right" }))
     hl.bind(mod .. " + K", hl.dsp.focus({ direction = "up" }))
     hl.bind(mod .. " + J", hl.dsp.focus({ direction = "down" }))
+    hl.bind(mod .. " + left", hl.dsp.focus({ direction = "left" }))
+    hl.bind(mod .. " + right", hl.dsp.focus({ direction = "right" }))
+    hl.bind(mod .. " + up", hl.dsp.focus({ direction = "up" }))
+    hl.bind(mod .. " + down", hl.dsp.focus({ direction = "down" }))
 
-    ---- Spostamento Finestre
+    ---- Spostamento Finestre (hjkl + frecce)
     hl.bind(mod .. " + SHIFT + H", hl.dsp.window.move({ direction = "left" }))
     hl.bind(mod .. " + SHIFT + L", hl.dsp.window.move({ direction = "right" }))
     hl.bind(mod .. " + SHIFT + K", hl.dsp.window.move({ direction = "up" }))
     hl.bind(mod .. " + SHIFT + J", hl.dsp.window.move({ direction = "down" }))
+    hl.bind(mod .. " + SHIFT + left", hl.dsp.window.move({ direction = "left" }))
+    hl.bind(mod .. " + SHIFT + right", hl.dsp.window.move({ direction = "right" }))
+    hl.bind(mod .. " + SHIFT + up", hl.dsp.window.move({ direction = "up" }))
+    hl.bind(mod .. " + SHIFT + down", hl.dsp.window.move({ direction = "down" }))
     hl.bind("ALT + mouse:272", hl.dsp.window.drag(), { mouse = true })   -- ALT + LMB: Move a window
     hl.bind("ALT + mouse:273", hl.dsp.window.resize(), { mouse = true }) -- ALT + RMB: Resize a window
 

@@ -109,7 +109,7 @@ function M.apply(nixInfo)
         },
 
         input = {
-            kb_layout          = "it",
+            kb_layout          = nixInfo("it", "kb_layout"),
             kb_variant         = "",
             kb_model           = "",
             kb_rules           = "",
@@ -174,12 +174,55 @@ function M.apply(nixInfo)
     --    -- 3, left, scale: 1.5, float
     --},
 
-    -- Example per-device config
+    -- Config per-device passate da Nix (settings.extraDevices)
     -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Devices/ for more
-    --hl.device({
-    --    name        = "epic-mouse-v1",
-    --    sensitivity = -0.5,
-    --})
+    for _, dev in ipairs(nixInfo({}, "extraDevices")) do
+        hl.device(dev)
+    end
+
+    -- Colori dei bordi da un colors.conf esterno (es. matugen).
+    -- Il file e' hyprlang: qui leggiamo solo le variabili
+    -- "$nome = valore" e le applichiamo. Letto ad ogni avvio o
+    -- `hyprctl reload`; se manca o e' malformato, si ignora.
+    local colors_file = nixInfo("", "colorsConfFile")
+    if colors_file ~= "" then
+        pcall(function()
+            local f = io.open(colors_file, "r")
+            if not f then return end
+            local vars = {}
+            for line in f:lines() do
+                local name, val = line:match("^%s*%$([%w_]+)%s*=%s*(.-)%s*$")
+                if name and val and val ~= "" then vars[name] = val end
+            end
+            f:close()
+            if vars.primary and vars.outline then
+                hl.config({
+                    general = {
+                        col = {
+                            active_border = vars.primary,
+                            inactive_border = vars.outline,
+                        },
+                    },
+                    group = {
+                        col = {
+                            border_active = vars.primary,
+                            border_inactive = vars.outline,
+                            border_locked_active = vars.error or vars.primary,
+                            border_locked_inactive = vars.outline,
+                        },
+                        groupbar = {
+                            col = {
+                                active = vars.primary,
+                                inactive = vars.outline,
+                                locked_active = vars.error or vars.primary,
+                                locked_inactive = vars.outline,
+                            },
+                        },
+                    },
+                })
+            end
+        end)
+    end
 end
 
 return M

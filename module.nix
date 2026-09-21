@@ -21,6 +21,23 @@
       description = "Il terminale predefinito per i keybindings di Hyprland.";
     };
 
+    kb_layout = lib.mkOption {
+      type = lib.types.str;
+      default = "it";
+      description = "Layout della tastiera (input:kb_layout).";
+    };
+
+    colorsConfFile = lib.mkOption {
+      type = lib.types.str;
+      default = "";
+      description = ''
+        Percorso di un colors.conf in formato hyprlang (es. generato da
+        matugen) da cui leggere $primary/$outline/$error per i colori dei
+        bordi. Letto a runtime ad ogni avvio/reload: se assente o vuoto i
+        bordi restano ai default.
+      '';
+    };
+
     extraWindowRule = lib.mkOption {
       type = lib.types.bool;
       default = false;
@@ -138,6 +155,9 @@
   config = {
     luaInfo = {
       terminal = config.settings.terminal;
+      kb_layout = config.settings.kb_layout;
+      colorsConfFile = config.settings.colorsConfFile;
+      extraDevices = config.settings.extraDevices;
       inactiveOpacity = config.settings.inactiveOpacity;
       activeOpacity = config.settings.activeOpacity;
       rounding = config.settings.rounding;
@@ -161,10 +181,8 @@
 
     "hyprland.lua".path = ./init.lua;
 
-    runtimePkgs = [
-      pkgs.kitty
-      pkgs.rofi
-      pkgs.waybar
-    ];
+    # NOTE: niente pacchetti nel PATH del wrapper: il terminale e le
+    # utility arrivano dal profilo dell'utente che importa il modulo.
+    runtimePkgs = [ ];
   };
 }
