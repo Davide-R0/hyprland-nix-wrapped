@@ -1,12 +1,96 @@
 local M = {}
 
 function M.apply(nixInfo)
-    -- Avvio automatico (Exec-once)
+    -- WARN: le direttive-keyword di hyprlang (monitor, exec-once,
+    -- env, windowrule, workspace, source) NON sono chiavi valide di
+    -- hl.config: passate li' vengono ignorate IN SILENZIO (config ok
+    -- ma nessun effetto — successo il 21/09/2026 con scala monitor e
+    -- autostart). In Lua si usano le funzioni dedicate: hl.monitor,
+    -- hl.on('hyprland.start'), hl.env, hl.window_rule,
+    -- hl.workspace_rule.
+
+    -- Avvio automatico (exec-once)
     hl.on('hyprland.start', function()
-        --hl.exec_cmd(terminal)
-        --hl.exec_cmd("nm-applet")
-        --hl.exec_cmd("waybar & hyprpaper & firefox") -- Execute waybar, hyprpaper, firefox
+        hl.exec_cmd("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+        hl.exec_cmd("systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP")
+        hl.exec_cmd("systemctl --user start hyprland-session.target")
+        for _, cmd in ipairs(nixInfo({}, "extraExecOnce")) do
+            hl.exec_cmd(cmd)
+        end
     end)
+
+    -- Variabili d'ambiente della sessione
+    hl.env("SSH_AUTH_SOCK", "$XDG_RUNTIME_DIR/gcr/ssh")
+
+    -- Monitor: stringhe in formato hyprlang "NOME, MODE, POS, SCALA"
+    -- tradotte in chiamate hl.monitor()
+    for _, mon in ipairs(nixInfo({ ",preferred,auto,1" }, "monitors")) do
+        local fields = {}
+        for f in mon:gmatch("([^,]*)") do
+            fields[#fields + 1] = f:match("^%s*(.-)%s*$")
+        end
+        hl.monitor({
+            output   = fields[1] or "",
+            mode     = (fields[2] ~= "" and fields[2]) or "preferred",
+            position = (fields[3] ~= "" and fields[3]) or "auto",
+            scale    = tonumber(fields[4]) or fields[4] or 1,
+        })
+    end
+
+    -- Workspace rules: "ID, chiave:valore, ..." -> hl.workspace_rule
+    -- Le chiavi hyprlang che in Lua hanno un nome diverso vengono
+    -- tradotte; una chiave sconosciuta fa fallire il verify-config
+    -- ad alta voce (meglio di un'opzione ignorata in silenzio).
+    local ws_key_alias = {
+        gapsin = "gaps_in",
+        gapsout = "gaps_out",
+        bordersize = "border_size",
+        ["on-created-empty"] = "on_created_empty",
+    }
+    for _, ws in ipairs(nixInfo({}, "workspaces")) do
+        local rule = {}
+        local first = true
+        for raw in ws:gmatch("([^,]+)") do
+            local f = raw:match("^%s*(.-)%s*$")
+            if first then
+                rule.workspace = f
+                first = false
+            else
+                local k, v = f:match("^([%w_%-]+)%s*:%s*(.+)$")
+                if k then
+                    k = ws_key_alias[k] or k
+                    if v == "true" then
+                        rule[k] = true
+                    elseif v == "false" then
+                        rule[k] = false
+                    else
+                        rule[k] = tonumber(v) or v
+                    end
+                end
+            end
+        end
+        if rule.workspace then hl.workspace_rule(rule) end
+    end
+
+    -- Window rules (in hyprlang erano le stringhe windowrule)
+    hl.window_rule({
+        name    = "no-anim-quickshell",
+        match   = { class = "^(org.quickshell)$" },
+        no_anim = true,
+    })
+    for _, class in ipairs({
+        "^(xdg-desktop-portal)(.*)$",
+        "^(steam)$",
+        "^(org.quickshell)$",
+        "^(blueman-manager)$",
+        "^(zoom)$",
+    }) do
+        hl.window_rule({
+            name  = "float-" .. class:gsub("%W", ""),
+            match = { class = class },
+            float = true,
+        })
+    end
 
     -- Configs
     hl.config({
@@ -60,38 +144,14 @@ function M.apply(nixInfo)
             --},
         },
 
-        --source = "./dms/colors.conf", -- TODO: settarlo da nix?
-        monitor = nixInfo({ ",preferred,auto,1" }, "monitors"),
-        workspace = nixInfo({}, "workspaces"),
-        exec_once = (function()
-            local cmds = {
-                "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
-                "systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP",
-                "systemctl --user start hyprland-session.target",
-            }
-            for _, cmd in ipairs(nixInfo({}, "extraExecOnce")) do
-                table.insert(cmds, cmd)
-            end
-            return cmds
-        end)(),
-
-        env = { "SSH_AUTH_SOCK,$XDG_RUNTIME_DIR/gcr/ssh" },
-
+        -- NOTE: monitor/workspace/exec-once/env/windowrule/source NON
+        -- vanno qui: vedi il WARN in testa a M.apply.
         xwayland = {
             force_zero_scaling = true,
         },
         master = {
             mfact = 0.5, -- ???
             --new_status = "master", -- nella doc ufficiale c'è questo...
-        },
-
-        windowrule = {
-            "no_anim class:^(org.quickshell)$",
-            "float class:^(xdg-desktop-portal)(.*)$",
-            "float class:^(steam)$",
-            "float class:^(org.quickshell)$",
-            "float class:^(blueman-manager)$",
-            "float class:^(zoom)$",
         },
 
         -- NOTE: per farlo diventare come niri
