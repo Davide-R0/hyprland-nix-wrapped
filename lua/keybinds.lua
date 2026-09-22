@@ -38,10 +38,10 @@ function M.apply(nixInfo)
 
     -- Gestione Finestre (Window Management)
     hl.bind(mod .. " + SHIFT + Q", hl.dsp.window.close())
-    --hl.bind(mod .. " + F", hl.dsp.fullscreen("0"))
-    hl.bind(mod .. " + SHIFT + F",
-        hl.dsp.exec_cmd(
-            'hyprctl --batch "dispatch togglefloating; dispatch resizeactive exact 40% 40%; dispatch moveactive exact 59% 58%"'))
+    hl.bind(mod .. " + F", hl.dsp.fullscreen("0"))
+    -- hl.bind(mod .. " + SHIFT + F",
+    --     hl.dsp.exec_cmd(
+    --         'hyprctl --batch "dispatch togglefloating; dispatch resizeactive exact 40% 40%; dispatch moveactive exact 59% 58%"'))
     --hl.bind(mod .. " + T", hl.dsp.layoutmsg("togglesplit"))
     --hl.bind(mod .. " + P", hl.dsp.pin())
     hl.bind(mod .. " + O", hl.dsp.exec_cmd("hyprctl setprop active opaque toggle"))
