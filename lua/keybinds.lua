@@ -38,13 +38,20 @@ function M.apply(nixInfo)
 
     -- Gestione Finestre (Window Management)
     hl.bind(mod .. " + SHIFT + Q", hl.dsp.window.close())
-    -- hl.bind(mod .. " + F", hl.dsp.fullscreen("0"))
-    hl.bind(mod .. " + SHIFT + F",
-        hl.dsp.exec_cmd(
-            'hyprctl --batch "dispatch togglefloating; dispatch resizeactive exact 40% 40%; dispatch moveactive exact 59% 58%"'))
+    hl.bind(mod .. " + F", hl.dsp.window.fullscreen())
+    -- WARN: 'hyprctl --batch "dispatch ..."' NON funziona col parser
+    -- Lua (il CLI traduce in hl.dispatch(...) e la sintassi hyprlang
+    -- non compila). Le sequenze si fanno con un bind-funzione.
+    hl.bind(mod .. " + SHIFT + F", function()
+        hl.dispatch(hl.dsp.window.float())
+        hl.dispatch(hl.dsp.window.resize({ x = "40%", y = "40%" }))
+        hl.dispatch(hl.dsp.window.move({ x = "59%", y = "58%" }))
+    end)
     --hl.bind(mod .. " + T", hl.dsp.layoutmsg("togglesplit"))
     --hl.bind(mod .. " + P", hl.dsp.pin())
-    hl.bind(mod .. " + O", hl.dsp.exec_cmd("hyprctl setprop active opaque toggle"))
+    -- WARN: anche "hyprctl setprop" risponde "unknown request" col
+    -- parser Lua: si usa il dispatcher nativo.
+    hl.bind(mod .. " + O", hl.dsp.window.set_prop({ prop = "opaque", value = "toggle" }))
 
     -- Screenshot
     hl.bind("Print", hl.dsp.exec_cmd("dms screenshot"))
@@ -158,18 +165,27 @@ function M.apply(nixInfo)
     -- La maggior parte dei wrapper Lua per Hyprland supporta l'opzione "submap" nella tabella finale
     hl.bind("CTRL + ALT + G", hl.dsp.submap("reset"), { submap = "passthru" })
 
-    -- Inseriamo gli extraBind passati da Nix.
-    -- Presumendo che i bind extra siano in formato raw di Hyprland (es. "SUPER, Q, exec, kitty"),
-    -- possiamo usare hl.config per aggiungerli direttamente.
-    local extra_binds = nixInfo({}, "extraBind")
-    if #extra_binds > 0 then
-        hl.config({ bind = extra_binds })
+    -- extraBind/extraBindel arrivano da Nix come stringhe hyprlang
+    -- "MODS, KEY, exec, comando". WARN: hl.config({ bind = ... }) le
+    -- IGNORA in silenzio (stessa famiglia di monitor/exec-once):
+    -- vanno tradotte in hl.bind. Supportato solo il dispatcher
+    -- "exec"; qualsiasi altro fa fallire il verify ad alta voce.
+    local function apply_raw_binds(list, opts)
+        for _, b in ipairs(list) do
+            local mods, key, disp, args = b:match("^%s*([^,]*),%s*([^,]+),%s*([^,]+),%s*(.*)$")
+            if not key or disp:match("^%s*(.-)%s*$") ~= "exec" then
+                error("bind extra non traducibile (solo 'exec' e' supportato): " .. b)
+            end
+            local combo = key:match("^%s*(.-)%s*$")
+            local m = mods:match("^%s*(.-)%s*$")
+            if m ~= "" then
+                combo = m:gsub("%s+", " + ") .. " + " .. combo
+            end
+            hl.bind(combo, hl.dsp.exec_cmd(args), opts)
+        end
     end
-
-    local extra_bindels = nixInfo({}, "extraBindel")
-    if #extra_bindels > 0 then
-        hl.config({ bindel = extra_bindels })
-    end
+    apply_raw_binds(nixInfo({}, "extraBind"))
+    apply_raw_binds(nixInfo({}, "extraBindel"), { repeating = true, locked = true })
 end
 
 return M

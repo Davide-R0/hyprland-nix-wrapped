@@ -20,7 +20,12 @@ function M.apply(nixInfo)
     end)
 
     -- Variabili d'ambiente della sessione
-    hl.env("SSH_AUTH_SOCK", "$XDG_RUNTIME_DIR/gcr/ssh")
+    -- WARN: hl.env NON espande $VARIABILI (verificato: il valore
+    -- resta letterale); si espande qui in Lua.
+    local rt = os.getenv("XDG_RUNTIME_DIR")
+    if rt then
+        hl.env("SSH_AUTH_SOCK", rt .. "/gcr/ssh")
+    end
 
     -- Monitor: stringhe in formato hyprlang "NOME, MODE, POS, SCALA"
     -- tradotte in chiamate hl.monitor()
